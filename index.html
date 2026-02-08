@@ -100,8 +100,18 @@ html,body{height:100%;font-family:'Inter',system-ui,sans-serif;background:var(--
 .ai-cat{font-size:10px;color:var(--t2);background:var(--surface);padding:2px 7px;border-radius:20px;font-weight:500}
 .ai-text{font-size:15px;line-height:1.75;color:var(--t1)}
 .ai-text code{font-family:'JetBrains Mono',monospace;font-size:12.5px;background:var(--surface);padding:2px 6px;border-radius:5px;color:#d63384}
-.ai-text pre{margin:12px 0;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px 16px;overflow-x:auto;font-family:'JetBrains Mono',monospace;font-size:12px;line-height:1.6}
-.ai-text pre code{background:none;padding:0;color:var(--t1)}
+.ai-text pre{margin:12px 0;background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden;font-family:'JetBrains Mono',monospace;font-size:12px;line-height:1.6;position:relative}
+.ai-text pre .pre-head{display:flex;align-items:center;justify-content:space-between;padding:6px 12px;background:var(--surface2);border-bottom:1px solid var(--border);font-size:11px;color:var(--t2);font-weight:500}
+.ai-text pre .pre-copy{border:none;background:none;color:var(--t3);cursor:pointer;font-size:11px;font-family:inherit;display:flex;align-items:center;gap:4px;padding:2px 6px;border-radius:4px;transition:all .12s}
+.ai-text pre .pre-copy:hover{background:var(--bg);color:var(--t1)}
+.ai-text pre .pre-copy svg{width:12px;height:12px}
+.ai-text pre code{display:block;padding:14px 16px;overflow-x:auto;background:none;color:var(--t1)}
+.ai-text blockquote{border-left:3px solid var(--border-h);padding-left:14px;margin:8px 0;color:var(--t2)}
+.ai-text ul,.ai-text ol{margin:8px 0;padding-left:22px}
+.ai-text li{margin-bottom:4px}
+.ai-text table{width:100%;border-collapse:collapse;margin:12px 0;font-size:13px}
+.ai-text th,.ai-text td{border:1px solid var(--border);padding:8px 12px;text-align:left}
+.ai-text th{background:var(--surface);font-weight:600;font-size:12px}
 .ai-text strong{font-weight:600;color:var(--t1)}
 .ai-text em{color:var(--t2)}
 .ai-actions{display:flex;gap:4px;margin-top:8px;opacity:0;transition:opacity .15s}
@@ -147,6 +157,16 @@ html,body{height:100%;font-family:'Inter',system-ui,sans-serif;background:var(--
 .btn-send svg{width:15px;height:15px}
 .input-hint{text-align:center;margin-top:8px;font-size:10px;color:var(--t3);letter-spacing:.01em}
 
+/* toast */
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--accent);color:#fff;font-size:13px;font-weight:500;padding:8px 18px;border-radius:8px;opacity:0;transition:all .2s ease;z-index:1000;pointer-events:none;box-shadow:0 4px 12px rgba(0,0,0,.15)}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* regenerate */
+.ai-act.regen svg{width:13px;height:13px}
+
+/* sidebar time */
+.sb-item .time{font-size:10px;color:var(--t3);flex-shrink:0;white-space:nowrap}
+
 /* ---- OVERLAY ---- */
 .overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.3);z-index:15;backdrop-filter:blur(4px)}
 .overlay.on{display:block}
@@ -175,6 +195,7 @@ html,body{height:100%;font-family:'Inter',system-ui,sans-serif;background:var(--
 </head>
 <body>
 
+<div class="toast" id="toast"></div>
 <div class="app">
   <aside class="sidebar" id="sidebar">
     <div class="sb-head">
@@ -182,7 +203,7 @@ html,body{height:100%;font-family:'Inter',system-ui,sans-serif;background:var(--
         <div class="sb-mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div>
         <div class="sb-wordmark">nexus</div>
       </div>
-      <button class="btn-new" id="btnNew" title="New chat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
+      <button class="btn-new" id="btnNew" title="New chat (Cmd+K)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
     </div>
     <div class="sb-list" id="sbList">
       <div class="sb-label">History</div>
@@ -509,13 +530,76 @@ function esc(t){const d=document.createElement('div');d.textContent=t;return d.i
 
 function fmt(text){
   let h=esc(text);
-  h=h.replace(/```(\w*)\n([\s\S]*?)```/g,(_,l,c)=>'<pre><code>'+c.trim()+'</code></pre>');
+  // code blocks with language header + copy button
+  h=h.replace(/```(\w*)\n([\s\S]*?)```/g,(_,lang,c)=>{
+    const l=lang||'code';
+    const id='cb_'+Math.random().toString(36).slice(2,8);
+    return`<pre><div class="pre-head"><span>${l}</span><button class="pre-copy" data-cb="${id}" onclick="copyCode('${id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>Copy</button></div><code id="${id}">`+c.trim()+'</code></pre>';
+  });
   h=h.replace(/`([^`]+)`/g,'<code>$1</code>');
+  // tables
+  h=h.replace(/((?:\|[^\n]+\|\n?)+)/g,(_,tbl)=>{
+    const rows=tbl.trim().split('\n').filter(r=>!/^\|[\s\-:|]+\|$/.test(r));
+    if(rows.length<1)return tbl;
+    let t='<table>';
+    rows.forEach((row,i)=>{
+      const cells=row.split('|').filter((_,j,a)=>j>0&&j<a.length-1).map(c=>c.trim());
+      const tag=i===0?'th':'td';
+      t+='<tr>'+cells.map(c=>`<${tag}>${c}</${tag}>`).join('')+'</tr>';
+    });
+    return t+'</table>';
+  });
   h=h.replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>');
   h=h.replace(/\*(.+?)\*/g,'<em>$1</em>');
+  // blockquotes
+  h=h.replace(/^&gt; (.+)$/gm,'<blockquote>$1</blockquote>');
+  // ordered lists
+  h=h.replace(/((?:^\d+\. .+\n?)+)/gm,(_,block)=>{
+    const items=block.trim().split('\n').map(l=>l.replace(/^\d+\.\s+/,''));
+    return'<ol>'+items.map(i=>'<li>'+i+'</li>').join('')+'</ol>';
+  });
+  // unordered lists
+  h=h.replace(/((?:^- .+\n?)+)/gm,(_,block)=>{
+    const items=block.trim().split('\n').map(l=>l.replace(/^- /,''));
+    return'<ul>'+items.map(i=>'<li>'+i+'</li>').join('')+'</ul>';
+  });
   h=h.replace(/^---$/gm,'<hr style="border:none;border-top:1px solid var(--border);margin:14px 0">');
   h=h.replace(/\n/g,'<br>');
+  // clean up extra <br> around block elements
+  h=h.replace(/<br>(<\/?(?:pre|table|ol|ul|li|blockquote|hr))/g,'$1');
+  h=h.replace(/(<\/(?:pre|table|ol|ul|blockquote|hr)>)<br>/g,'$1');
   return h;
+}
+
+// ---- TOAST ----
+const toastEl=$('#toast');
+let toastTimer;
+function toast(msg){
+  clearTimeout(toastTimer);
+  toastEl.textContent=msg;
+  toastEl.classList.add('show');
+  toastTimer=setTimeout(()=>toastEl.classList.remove('show'),2000);
+}
+
+// ---- COPY CODE ----
+window.copyCode=function(id){
+  const el=document.getElementById(id);
+  if(!el)return;
+  navigator.clipboard.writeText(el.textContent);
+  const btn=document.querySelector(`[data-cb="${id}"]`);
+  if(btn){btn.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Copied';setTimeout(()=>{btn.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>Copy'},1500)}
+  toast('Copied to clipboard');
+}
+
+// ---- TIME AGO ----
+function timeAgo(ts){
+  const s=Math.floor((Date.now()-ts)/1000);
+  if(s<60)return'just now';
+  const m=Math.floor(s/60);if(m<60)return m+'m ago';
+  const h=Math.floor(m/60);if(h<24)return h+'h ago';
+  const d=Math.floor(h/24);if(d===1)return'Yesterday';
+  if(d<7)return d+'d ago';
+  return new Date(ts).toLocaleDateString('en-US',{month:'short',day:'numeric'});
 }
 
 // ---- CONVERSATION STATE ----
@@ -566,7 +650,8 @@ function renderAi(m){
       </div>
       <div class="ai-text">${fmt(m.content)}</div>
       <div class="ai-actions">
-        <button class="ai-act" onclick="navigator.clipboard.writeText(decodeURIComponent('${encodeURIComponent(m.content)}'))"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>Copy</button>
+        <button class="ai-act" onclick="navigator.clipboard.writeText(decodeURIComponent('${encodeURIComponent(m.content)}'));toast('Copied to clipboard')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>Copy</button>
+        <button class="ai-act regen" onclick="regenerate('${m.model}','${m.cat}',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>Regen</button>
       </div>
     </div>
   </div>`;
@@ -586,7 +671,7 @@ function renderMulti(m){
         <div class="ai-body">
           <div class="ai-head"><span class="ai-name ${md.cls}">${md.name}</span>${isRec?`<span class="ai-cat">Best fit</span>`:''} ${cat?`<span class="ai-cat">${cat}</span>`:''}</div>
           <div class="ai-text">${fmt(r.content)}</div>
-          <div class="ai-actions"><button class="ai-act" onclick="navigator.clipboard.writeText(decodeURIComponent('${encodeURIComponent(r.content)}'))"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>Copy</button></div>
+          <div class="ai-actions"><button class="ai-act" onclick="navigator.clipboard.writeText(decodeURIComponent('${encodeURIComponent(r.content)}'));toast('Copied to clipboard')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>Copy</button></div>
         </div>
       </div>
     </div>`;
@@ -630,11 +715,9 @@ function renderSb(){
   if(!convos.length) h+='<div class="sb-empty">No conversations yet</div>';
   for(const c of convos){
     const on=c.id===activeId;
-    const last=c.msgs.filter(m=>m.role==='ai').pop();
-    const col=last?`var(--${last.model||'accent'})`:'var(--t3)';
     h+=`<div class="sb-item${on?' active':''}" data-id="${c.id}">
-      <div class="dot" style="background:${col}"></div>
       <span class="title">${esc(c.title)}</span>
+      <span class="time">${timeAgo(c.ts)}</span>
       <button class="del" data-del="${c.id}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
     </div>`;
   }
@@ -733,7 +816,7 @@ async function doSingle(c,rt){
     <div class="ai-body">
       <div class="ai-head"><span class="ai-name ${md.cls}">${md.name}</span>${cat?`<span class="ai-cat">${cat}</span>`:''}</div>
       <div class="ai-text" id="_stream"></div>
-      <div class="ai-actions"><button class="ai-act" onclick="navigator.clipboard.writeText(decodeURIComponent('${encodeURIComponent(resp)}'))"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>Copy</button></div>
+      <div class="ai-actions"><button class="ai-act" onclick="navigator.clipboard.writeText(decodeURIComponent('${encodeURIComponent(resp)}'));toast('Copied to clipboard')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>Copy</button><button class="ai-act regen" onclick="regenerate('${model}','${rt.cat}',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>Regen</button></div>
     </div>`;
   t.removeAttribute('id');
 
@@ -776,6 +859,34 @@ overlay.addEventListener('click',closeSb);
 document.addEventListener('click',e=>{
   const ch=e.target.closest('.w-chip');
   if(ch){input.value=ch.dataset.s;input.dispatchEvent(new Event('input'));send()}
+});
+
+// ---- REGENERATE ----
+window.regenerate=async function(model,cat,btn){
+  if(busy)return;
+  busy=true;
+  const c=active();if(!c)return;
+  const msg=btn.closest('.msg.ai');
+  const textEl=msg.querySelector('.ai-text');
+  textEl.innerHTML='<div class="typing"><div class="d"></div><div class="d"></div><div class="d"></div></div>';
+  await sleep(500);
+  const newResp=mockResponse(model,cat);
+  await stream(textEl,newResp);
+  // update stored message
+  const aiMsgs=c.msgs.filter(m=>m.role==='ai'&&!m.multi);
+  const idx=Array.from(mInner.querySelectorAll('.msg.ai:not(.multi .msg.ai)')).indexOf(msg);
+  if(aiMsgs[idx])aiMsgs[idx].content=newResp;
+  save();
+  busy=false;
+  toast('Response regenerated');
+}
+
+// ---- KEYBOARD SHORTCUTS ----
+document.addEventListener('keydown',e=>{
+  // Cmd+K or Ctrl+K = new chat
+  if((e.metaKey||e.ctrlKey)&&e.key==='k'){e.preventDefault();activeId=null;render();renderSb();updateH();closeSb();input.focus()}
+  // Escape = close sidebar (mobile)
+  if(e.key==='Escape'){closeSb()}
 });
 
 // ---- INIT ----
