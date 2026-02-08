@@ -3,2110 +3,830 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AI Router — Intelligent Model Selection</title>
+<title>Nexus — One prompt. Best model. Instantly.</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
-/* ============================================
-   RESET & BASE
-   ============================================ */
-*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
-
-:root {
-  --bg-base: #0a0a0f;
-  --bg-panel: #12121a;
-  --bg-elevated: #1a1a25;
-  --bg-hover: #22222f;
-  --bg-glass: rgba(255,255,255,0.03);
-  --border-subtle: rgba(255,255,255,0.06);
-  --border-medium: rgba(255,255,255,0.1);
-  --text-primary: #e8e8ed;
-  --text-secondary: #8b8b9e;
-  --text-tertiary: #5a5a6e;
-  --text-dim: #3d3d50;
-
-  /* AI Model Colors */
-  --claude: #d4a574;
-  --claude-glow: rgba(212,165,116,0.15);
-  --claude-bg: rgba(212,165,116,0.08);
-  --chatgpt: #10a37f;
-  --chatgpt-glow: rgba(16,163,127,0.15);
-  --chatgpt-bg: rgba(16,163,127,0.08);
-  --gemini: #4285f4;
-  --gemini-glow: rgba(66,133,244,0.15);
-  --gemini-bg: rgba(66,133,244,0.08);
-  --router: #a855f7;
-  --router-glow: rgba(168,85,247,0.15);
-  --router-bg: rgba(168,85,247,0.08);
-
-  --radius-sm: 8px;
-  --radius-md: 12px;
-  --radius-lg: 16px;
-  --radius-xl: 20px;
-  --radius-full: 9999px;
-
-  --sidebar-width: 280px;
-  --header-height: 60px;
-  --input-bar-height: 80px;
-
-  --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
-  --transition-base: 250ms cubic-bezier(0.4, 0, 0.2, 1);
-  --transition-slow: 400ms cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-html, body {
-  height: 100%;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-  background: var(--bg-base);
-  color: var(--text-primary);
-  overflow: hidden;
-  -webkit-font-smoothing: antialiased;
-}
-
-/* ============================================
-   LAYOUT
-   ============================================ */
-.app {
-  display: flex;
-  height: 100vh;
-  width: 100vw;
-  position: relative;
-}
-
-/* ============================================
-   SIDEBAR
-   ============================================ */
-.sidebar {
-  width: var(--sidebar-width);
-  min-width: var(--sidebar-width);
-  background: var(--bg-panel);
-  border-right: 1px solid var(--border-subtle);
-  display: flex;
-  flex-direction: column;
-  z-index: 20;
-  transition: transform var(--transition-slow);
-}
-
-.sidebar-header {
-  padding: 16px;
-  border-bottom: 1px solid var(--border-subtle);
-}
-
-.sidebar-brand {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 14px;
-}
-
-.brand-icon {
-  width: 32px;
-  height: 32px;
-  border-radius: var(--radius-sm);
-  background: linear-gradient(135deg, var(--router), #7c3aed);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 16px;
-  box-shadow: 0 0 20px var(--router-glow);
-}
-
-.brand-text {
-  font-size: 15px;
-  font-weight: 600;
-  letter-spacing: -0.02em;
-}
-
-.brand-text span {
-  color: var(--router);
-}
-
-.btn-new-chat {
-  width: 100%;
-  padding: 10px 14px;
-  border: 1px solid var(--border-medium);
-  border-radius: var(--radius-md);
-  background: var(--bg-glass);
-  color: var(--text-primary);
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  transition: all var(--transition-fast);
-  font-family: inherit;
-  backdrop-filter: blur(10px);
-}
-
-.btn-new-chat:hover {
-  background: var(--bg-hover);
-  border-color: rgba(255,255,255,0.15);
-}
-
-.btn-new-chat svg {
-  width: 16px;
-  height: 16px;
-  opacity: 0.7;
-}
-
-.sidebar-search {
-  padding: 12px 16px 8px;
-}
-
-.search-input {
-  width: 100%;
-  padding: 8px 12px 8px 32px;
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-sm);
-  background: var(--bg-base);
-  color: var(--text-primary);
-  font-size: 12px;
-  font-family: inherit;
-  outline: none;
-  transition: border-color var(--transition-fast);
-}
-
-.search-input:focus {
-  border-color: var(--router);
-}
-
-.search-wrapper {
-  position: relative;
-}
-
-.search-wrapper svg {
-  position: absolute;
-  left: 10px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 14px;
-  height: 14px;
-  color: var(--text-tertiary);
-}
-
-.sidebar-conversations {
-  flex: 1;
-  overflow-y: auto;
-  padding: 8px;
-}
-
-.sidebar-conversations::-webkit-scrollbar { width: 4px; }
-.sidebar-conversations::-webkit-scrollbar-track { background: transparent; }
-.sidebar-conversations::-webkit-scrollbar-thumb { background: var(--text-dim); border-radius: 2px; }
-
-.sidebar-section-label {
-  font-size: 11px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--text-tertiary);
-  padding: 12px 8px 6px;
-}
-
-.conversation-item {
-  padding: 10px 12px;
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  transition: background var(--transition-fast);
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 2px;
-}
-
-.conversation-item:hover {
-  background: var(--bg-hover);
-}
-
-.conversation-item.active {
-  background: var(--bg-elevated);
-}
-
-.conversation-item .conv-icon {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-
-.conversation-item .conv-title {
-  font-size: 13px;
-  color: var(--text-secondary);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  flex: 1;
-}
-
-.conversation-item.active .conv-title {
-  color: var(--text-primary);
-}
-
-.conversation-item .conv-delete {
-  opacity: 0;
-  background: none;
-  border: none;
-  color: var(--text-tertiary);
-  cursor: pointer;
-  padding: 2px;
-  border-radius: 4px;
-  transition: all var(--transition-fast);
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.conversation-item:hover .conv-delete {
-  opacity: 1;
-}
-
-.conversation-item .conv-delete:hover {
-  color: #f87171;
-  background: rgba(248,113,113,0.1);
-}
-
-.sidebar-footer {
-  padding: 12px 16px;
-  border-top: 1px solid var(--border-subtle);
-  font-size: 11px;
-  color: var(--text-dim);
-  text-align: center;
-}
-
-/* ============================================
-   MAIN CHAT AREA
-   ============================================ */
-.main {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-  position: relative;
-}
-
-/* Header */
-.header {
-  height: var(--header-height);
-  display: flex;
-  align-items: center;
-  padding: 0 20px;
-  border-bottom: 1px solid var(--border-subtle);
-  background: rgba(18,18,26,0.8);
-  backdrop-filter: blur(20px);
-  gap: 12px;
-  flex-shrink: 0;
-}
-
-.hamburger {
-  display: none;
-  background: none;
-  border: none;
-  color: var(--text-secondary);
-  cursor: pointer;
-  padding: 6px;
-  border-radius: var(--radius-sm);
-  transition: background var(--transition-fast);
-}
-
-.hamburger:hover { background: var(--bg-hover); }
-.hamburger svg { width: 20px; height: 20px; }
-
-.header-title {
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--text-primary);
-  flex: 1;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.header-badges {
-  display: flex;
-  gap: 6px;
-  flex-shrink: 0;
-}
-
-.model-badge {
-  font-size: 11px;
-  font-weight: 600;
-  padding: 4px 10px;
-  border-radius: var(--radius-full);
-  font-family: 'JetBrains Mono', monospace;
-  letter-spacing: 0.02em;
-}
-
-.model-badge.claude {
-  background: var(--claude-bg);
-  color: var(--claude);
-  border: 1px solid rgba(212,165,116,0.2);
-}
-
-.model-badge.chatgpt {
-  background: var(--chatgpt-bg);
-  color: var(--chatgpt);
-  border: 1px solid rgba(16,163,127,0.2);
-}
-
-.model-badge.gemini {
-  background: var(--gemini-bg);
-  color: var(--gemini);
-  border: 1px solid rgba(66,133,244,0.2);
-}
-
-.model-badge.router {
-  background: var(--router-bg);
-  color: var(--router);
-  border: 1px solid rgba(168,85,247,0.2);
-}
-
-.header-mode {
-  font-size: 11px;
-  color: var(--text-tertiary);
-  padding: 4px 10px;
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-full);
-  background: none;
-  cursor: pointer;
-  font-family: 'JetBrains Mono', monospace;
-  transition: all var(--transition-fast);
-  flex-shrink: 0;
-}
-
-.header-mode:hover {
-  border-color: var(--router);
-  color: var(--router);
-}
-
-/* Messages */
-.messages {
-  flex: 1;
-  overflow-y: auto;
-  padding: 24px 0;
-  scroll-behavior: smooth;
-}
-
-.messages::-webkit-scrollbar { width: 6px; }
-.messages::-webkit-scrollbar-track { background: transparent; }
-.messages::-webkit-scrollbar-thumb { background: var(--text-dim); border-radius: 3px; }
-
-.messages-inner {
-  max-width: 780px;
-  margin: 0 auto;
-  padding: 0 24px;
-}
-
-/* Welcome screen */
-.welcome {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 60px 24px;
-  text-align: center;
-  animation: fadeUp 600ms ease-out;
-}
-
-.welcome-icon {
-  width: 72px;
-  height: 72px;
-  border-radius: var(--radius-lg);
-  background: linear-gradient(135deg, var(--router), #7c3aed, var(--gemini));
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 24px;
-  box-shadow: 0 0 40px var(--router-glow), 0 0 80px rgba(168,85,247,0.08);
-  animation: welcomePulse 3s ease-in-out infinite;
-}
-
-.welcome-icon svg {
-  width: 36px;
-  height: 36px;
-  color: white;
-}
-
-.welcome h1 {
-  font-size: 24px;
-  font-weight: 600;
-  letter-spacing: -0.02em;
-  margin-bottom: 8px;
-  background: linear-gradient(135deg, var(--text-primary), var(--text-secondary));
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
-.welcome p {
-  font-size: 14px;
-  color: var(--text-secondary);
-  max-width: 440px;
-  line-height: 1.6;
-  margin-bottom: 32px;
-}
-
-.welcome-models {
-  display: flex;
-  gap: 16px;
-  flex-wrap: wrap;
-  justify-content: center;
-}
-
-.welcome-model-card {
-  background: var(--bg-glass);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-md);
-  padding: 16px 20px;
-  text-align: center;
-  min-width: 140px;
-  transition: all var(--transition-base);
-  cursor: default;
-  backdrop-filter: blur(10px);
-}
-
-.welcome-model-card:hover {
-  border-color: var(--border-medium);
-  transform: translateY(-2px);
-}
-
-.welcome-model-card .wm-dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  margin: 0 auto 8px;
-}
-
-.welcome-model-card .wm-name {
-  font-size: 13px;
-  font-weight: 600;
-  margin-bottom: 4px;
-}
-
-.welcome-model-card .wm-desc {
-  font-size: 11px;
-  color: var(--text-tertiary);
-}
-
-.welcome-model-card.claude-card .wm-dot { background: var(--claude); box-shadow: 0 0 10px var(--claude-glow); }
-.welcome-model-card.claude-card .wm-name { color: var(--claude); }
-.welcome-model-card.chatgpt-card .wm-dot { background: var(--chatgpt); box-shadow: 0 0 10px var(--chatgpt-glow); }
-.welcome-model-card.chatgpt-card .wm-name { color: var(--chatgpt); }
-.welcome-model-card.gemini-card .wm-dot { background: var(--gemini); box-shadow: 0 0 10px var(--gemini-glow); }
-.welcome-model-card.gemini-card .wm-name { color: var(--gemini); }
-
-.welcome-suggestions {
-  margin-top: 32px;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  justify-content: center;
-  max-width: 560px;
-}
-
-.suggestion-chip {
-  font-size: 12px;
-  color: var(--text-secondary);
-  padding: 8px 14px;
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-full);
-  background: var(--bg-glass);
-  cursor: pointer;
-  transition: all var(--transition-fast);
-  font-family: inherit;
-  backdrop-filter: blur(10px);
-}
-
-.suggestion-chip:hover {
-  border-color: var(--router);
-  color: var(--router);
-  background: var(--router-bg);
-}
-
-/* Message Bubbles */
-.msg {
-  margin-bottom: 20px;
-  animation: fadeUp 300ms ease-out;
-}
-
-.msg.user {
-  display: flex;
-  justify-content: flex-end;
-}
-
-.msg.user .msg-bubble {
-  background: var(--bg-elevated);
-  border: 1px solid var(--border-medium);
-  border-radius: var(--radius-lg) var(--radius-lg) 4px var(--radius-lg);
-  padding: 12px 16px;
-  max-width: 70%;
-  font-size: 14px;
-  line-height: 1.6;
-}
-
-.msg.ai {
-  display: flex;
-  gap: 12px;
-  align-items: flex-start;
-}
-
-.msg-avatar {
-  width: 32px;
-  height: 32px;
-  border-radius: var(--radius-sm);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 14px;
-  flex-shrink: 0;
-  margin-top: 2px;
-}
-
-.msg-avatar.claude-avatar {
-  background: var(--claude-bg);
-  border: 1px solid rgba(212,165,116,0.2);
-  color: var(--claude);
-  box-shadow: 0 0 15px var(--claude-glow);
-}
-
-.msg-avatar.chatgpt-avatar {
-  background: var(--chatgpt-bg);
-  border: 1px solid rgba(16,163,127,0.2);
-  color: var(--chatgpt);
-  box-shadow: 0 0 15px var(--chatgpt-glow);
-}
-
-.msg-avatar.gemini-avatar {
-  background: var(--gemini-bg);
-  border: 1px solid rgba(66,133,244,0.2);
-  color: var(--gemini);
-  box-shadow: 0 0 15px var(--gemini-glow);
-}
-
-.msg-avatar.router-avatar {
-  background: var(--router-bg);
-  border: 1px solid rgba(168,85,247,0.2);
-  color: var(--router);
-  box-shadow: 0 0 15px var(--router-glow);
-}
-
-.msg-content {
-  flex: 1;
-  min-width: 0;
-}
-
-.msg-model-label {
-  font-size: 11px;
-  font-weight: 600;
-  font-family: 'JetBrains Mono', monospace;
-  margin-bottom: 6px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.msg-model-label .category-tag {
-  font-size: 10px;
-  font-weight: 500;
-  padding: 2px 6px;
-  border-radius: var(--radius-full);
-  background: var(--bg-hover);
-  color: var(--text-tertiary);
-}
-
-.msg-bubble.ai-bubble {
-  background: var(--bg-glass);
-  border: 1px solid var(--border-subtle);
-  border-radius: 4px var(--radius-lg) var(--radius-lg) var(--radius-lg);
-  padding: 14px 16px;
-  font-size: 14px;
-  line-height: 1.7;
-  backdrop-filter: blur(10px);
-  position: relative;
-}
-
-.msg-bubble.ai-bubble.claude-bubble {
-  border-color: rgba(212,165,116,0.12);
-  box-shadow: 0 0 20px var(--claude-glow);
-}
-
-.msg-bubble.ai-bubble.chatgpt-bubble {
-  border-color: rgba(16,163,127,0.12);
-  box-shadow: 0 0 20px var(--chatgpt-glow);
-}
-
-.msg-bubble.ai-bubble.gemini-bubble {
-  border-color: rgba(66,133,244,0.12);
-  box-shadow: 0 0 20px var(--gemini-glow);
-}
-
-.msg-bubble.ai-bubble.router-bubble {
-  border-color: rgba(168,85,247,0.12);
-  box-shadow: 0 0 20px var(--router-glow);
-}
-
-.msg-bubble.ai-bubble code {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 12.5px;
-  background: rgba(255,255,255,0.06);
-  padding: 2px 6px;
-  border-radius: 4px;
-  color: var(--router);
-}
-
-.msg-bubble.ai-bubble pre {
-  margin: 12px 0;
-  background: rgba(0,0,0,0.3);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-sm);
-  padding: 14px;
-  overflow-x: auto;
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 12.5px;
-  line-height: 1.5;
-}
-
-.msg-bubble.ai-bubble pre code {
-  background: none;
-  padding: 0;
-  color: var(--text-primary);
-}
-
-.msg-actions {
-  display: flex;
-  gap: 4px;
-  margin-top: 8px;
-  opacity: 0;
-  transition: opacity var(--transition-fast);
-}
-
-.msg:hover .msg-actions { opacity: 1; }
-
-.msg-action-btn {
-  background: none;
-  border: 1px solid transparent;
-  color: var(--text-tertiary);
-  font-size: 11px;
-  padding: 4px 8px;
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  font-family: inherit;
-  transition: all var(--transition-fast);
-}
-
-.msg-action-btn:hover {
-  color: var(--text-secondary);
-  background: var(--bg-hover);
-  border-color: var(--border-subtle);
-}
-
-.msg-action-btn svg {
-  width: 12px;
-  height: 12px;
-}
-
-/* Multi-model tabs */
-.multi-response {
-  margin-bottom: 20px;
-  animation: fadeUp 300ms ease-out;
-}
-
-.multi-tabs {
-  display: flex;
-  gap: 4px;
-  margin-bottom: 12px;
-  padding: 4px;
-  background: var(--bg-panel);
-  border-radius: var(--radius-md);
-  border: 1px solid var(--border-subtle);
-  width: fit-content;
-}
-
-.multi-tab {
-  font-size: 12px;
-  font-weight: 500;
-  padding: 6px 14px;
-  border-radius: var(--radius-sm);
-  background: none;
-  border: none;
-  color: var(--text-tertiary);
-  cursor: pointer;
-  font-family: 'JetBrains Mono', monospace;
-  transition: all var(--transition-fast);
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.multi-tab:hover { color: var(--text-secondary); }
-
-.multi-tab.active {
-  background: var(--bg-elevated);
-  color: var(--text-primary);
-}
-
-.multi-tab.active.claude-tab { color: var(--claude); box-shadow: 0 0 10px var(--claude-glow); }
-.multi-tab.active.chatgpt-tab { color: var(--chatgpt); box-shadow: 0 0 10px var(--chatgpt-glow); }
-.multi-tab.active.gemini-tab { color: var(--gemini); box-shadow: 0 0 10px var(--gemini-glow); }
-
-.multi-tab .recommended-star {
-  font-size: 10px;
-}
-
-.multi-panel {
-  display: none;
-}
-
-.multi-panel.active {
-  display: block;
-}
-
-/* Routing Visualization */
-.routing-viz {
-  display: none;
-  padding: 24px 0;
-}
-
-.routing-viz.active {
-  display: block;
-}
-
-.routing-container {
-  max-width: 780px;
-  margin: 0 auto;
-  padding: 0 24px;
-}
-
-.routing-card {
-  background: var(--bg-glass);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-lg);
-  padding: 24px;
-  backdrop-filter: blur(20px);
-  animation: fadeUp 200ms ease-out;
-}
-
-.routing-phase {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  margin-bottom: 16px;
-}
-
-.routing-phase:last-child { margin-bottom: 0; }
-
-.routing-dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background: var(--text-dim);
-  flex-shrink: 0;
-  transition: all var(--transition-base);
-}
-
-.routing-dot.active {
-  background: var(--router);
-  box-shadow: 0 0 12px var(--router-glow);
-  animation: routingPulse 800ms ease-in-out infinite;
-}
-
-.routing-dot.done {
-  background: var(--chatgpt);
-  box-shadow: 0 0 8px var(--chatgpt-glow);
-}
-
-.routing-label {
-  font-size: 13px;
-  color: var(--text-tertiary);
-  font-family: 'JetBrains Mono', monospace;
-  transition: color var(--transition-base);
-}
-
-.routing-label.active {
-  color: var(--router);
-}
-
-.routing-label.done {
-  color: var(--text-secondary);
-}
-
-.routing-model-icons {
-  display: flex;
-  gap: 8px;
-  margin-left: auto;
-}
-
-.routing-model-dot {
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 10px;
-  border: 1px solid var(--border-subtle);
-  background: var(--bg-panel);
-  transition: all var(--transition-base);
-  opacity: 0.4;
-}
-
-.routing-model-dot.selected {
-  opacity: 1;
-  animation: modelSelect 400ms ease-out;
-}
-
-.routing-model-dot.selected.claude-dot {
-  border-color: var(--claude);
-  background: var(--claude-bg);
-  color: var(--claude);
-  box-shadow: 0 0 12px var(--claude-glow);
-}
-
-.routing-model-dot.selected.chatgpt-dot {
-  border-color: var(--chatgpt);
-  background: var(--chatgpt-bg);
-  color: var(--chatgpt);
-  box-shadow: 0 0 12px var(--chatgpt-glow);
-}
-
-.routing-model-dot.selected.gemini-dot {
-  border-color: var(--gemini);
-  background: var(--gemini-bg);
-  color: var(--gemini);
-  box-shadow: 0 0 12px var(--gemini-glow);
-}
-
-/* Typing indicator */
-.typing-indicator {
-  display: flex;
-  gap: 4px;
-  padding: 8px 0;
-  align-items: center;
-}
-
-.typing-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  animation: typingBounce 1.2s ease-in-out infinite;
-}
-
-.typing-dot:nth-child(2) { animation-delay: 200ms; }
-.typing-dot:nth-child(3) { animation-delay: 400ms; }
-
-.typing-dot.claude-dot { background: var(--claude); }
-.typing-dot.chatgpt-dot { background: var(--chatgpt); }
-.typing-dot.gemini-dot { background: var(--gemini); }
-
-/* ============================================
-   INPUT BAR
-   ============================================ */
-.input-bar {
-  padding: 12px 24px 16px;
-  border-top: 1px solid var(--border-subtle);
-  background: rgba(18,18,26,0.9);
-  backdrop-filter: blur(20px);
-  flex-shrink: 0;
-}
-
-.input-bar-inner {
-  max-width: 780px;
-  margin: 0 auto;
-}
-
-.input-row {
-  display: flex;
-  gap: 8px;
-  align-items: flex-end;
-}
-
-.input-wrapper {
-  flex: 1;
-  position: relative;
-  background: var(--bg-panel);
-  border: 1px solid var(--border-medium);
-  border-radius: var(--radius-lg);
-  transition: border-color var(--transition-fast);
-}
-
-.input-wrapper:focus-within {
-  border-color: var(--router);
-  box-shadow: 0 0 20px var(--router-glow);
-}
-
-.input-textarea {
-  width: 100%;
-  padding: 12px 16px;
-  padding-right: 50px;
-  background: none;
-  border: none;
-  color: var(--text-primary);
-  font-size: 14px;
-  font-family: inherit;
-  line-height: 1.5;
-  resize: none;
-  outline: none;
-  min-height: 44px;
-  max-height: 200px;
-}
-
-.input-textarea::placeholder {
-  color: var(--text-tertiary);
-}
-
-.btn-send {
-  position: absolute;
-  right: 8px;
-  bottom: 8px;
-  width: 32px;
-  height: 32px;
-  border-radius: var(--radius-sm);
-  background: var(--router);
-  border: none;
-  color: white;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all var(--transition-fast);
-  opacity: 0.4;
-}
-
-.btn-send.active {
-  opacity: 1;
-  box-shadow: 0 0 15px var(--router-glow);
-}
-
-.btn-send:hover.active {
-  transform: scale(1.05);
-}
-
-.btn-send svg {
-  width: 16px;
-  height: 16px;
-}
-
-.input-footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-top: 8px;
-  font-size: 11px;
-  color: var(--text-dim);
-}
-
-.mode-selector {
-  display: flex;
-  gap: 2px;
-  background: var(--bg-panel);
-  border-radius: var(--radius-full);
-  padding: 2px;
-  border: 1px solid var(--border-subtle);
-}
-
-.mode-btn {
-  font-size: 11px;
-  padding: 4px 10px;
-  border: none;
-  background: none;
-  color: var(--text-tertiary);
-  border-radius: var(--radius-full);
-  cursor: pointer;
-  font-family: 'JetBrains Mono', monospace;
-  transition: all var(--transition-fast);
-}
-
-.mode-btn:hover { color: var(--text-secondary); }
-
-.mode-btn.active {
-  background: var(--bg-elevated);
-  color: var(--text-primary);
-}
-
-/* ============================================
-   MOBILE OVERLAY
-   ============================================ */
-.overlay {
-  display: none;
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.5);
-  z-index: 15;
-  backdrop-filter: blur(4px);
-}
-
-.overlay.active { display: block; }
-
-/* ============================================
-   ANIMATIONS
-   ============================================ */
-@keyframes fadeUp {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes welcomePulse {
-  0%, 100% { box-shadow: 0 0 40px var(--router-glow), 0 0 80px rgba(168,85,247,0.08); }
-  50% { box-shadow: 0 0 50px var(--router-glow), 0 0 100px rgba(168,85,247,0.12); }
-}
-
-@keyframes routingPulse {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.4); }
-}
-
-@keyframes modelSelect {
-  0% { transform: scale(0.5); opacity: 0; }
-  60% { transform: scale(1.2); }
-  100% { transform: scale(1); opacity: 1; }
-}
-
-@keyframes typingBounce {
-  0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
-  30% { transform: translateY(-4px); opacity: 1; }
-}
-
-@keyframes streamIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-/* ============================================
-   RESPONSIVE
-   ============================================ */
-@media (max-width: 768px) {
-  .sidebar {
-    position: fixed;
-    left: 0;
-    top: 0;
-    bottom: 0;
-    transform: translateX(-100%);
-    z-index: 30;
-  }
-
-  .sidebar.open {
-    transform: translateX(0);
-  }
-
-  .hamburger { display: flex; }
-
-  .messages-inner {
-    padding: 0 16px;
-  }
-
-  .input-bar {
-    padding: 10px 16px 14px;
-  }
-
-  .msg.user .msg-bubble {
-    max-width: 85%;
-  }
-
-  .welcome-models {
-    flex-direction: column;
-    align-items: center;
-  }
-
-  .welcome-model-card {
-    width: 100%;
-    max-width: 220px;
-  }
-
-  .header-badges { display: none; }
-}
-
-@media (max-width: 480px) {
-  .welcome h1 { font-size: 20px; }
-  .welcome-suggestions { flex-direction: column; align-items: stretch; }
-  .suggestion-chip { text-align: center; }
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+
+:root{
+  --bg:#08080c;
+  --surface:#111118;
+  --surface2:#19191f;
+  --border:rgba(255,255,255,.06);
+  --border-h:rgba(255,255,255,.1);
+  --t1:#f0f0f4;
+  --t2:#85859a;
+  --t3:#4a4a5a;
+  --claude:#d4a574;
+  --gpt:#10a37f;
+  --gemini:#698bf7;
+  --accent:#a78bfa;
+  --accent2:#c084fc;
+  --radius:14px;
+}
+
+html,body{height:100%;font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--t1);overflow:hidden;-webkit-font-smoothing:antialiased}
+
+/* ---- LAYOUT ---- */
+.app{display:flex;height:100vh}
+.sidebar{width:260px;min-width:260px;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;z-index:20;transition:transform .3s ease}
+.main{flex:1;display:flex;flex-direction:column;min-width:0;position:relative;background:var(--bg)}
+
+/* ---- SIDEBAR ---- */
+.sb-head{padding:20px 18px 14px;display:flex;align-items:center;justify-content:space-between}
+.sb-logo{display:flex;align-items:center;gap:10px}
+.sb-mark{width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,var(--accent),#6d28d9);display:grid;place-items:center}
+.sb-mark svg{width:14px;height:14px;color:#fff}
+.sb-wordmark{font-size:15px;font-weight:700;letter-spacing:-.03em}
+.sb-wordmark span{background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.btn-new{width:30px;height:30px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--t2);cursor:pointer;display:grid;place-items:center;transition:all .15s}
+.btn-new:hover{border-color:var(--border-h);color:var(--t1);background:var(--surface2)}
+.btn-new svg{width:16px;height:16px}
+
+.sb-list{flex:1;overflow-y:auto;padding:4px 8px}
+.sb-list::-webkit-scrollbar{width:3px}
+.sb-list::-webkit-scrollbar-thumb{background:var(--t3);border-radius:2px}
+.sb-label{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--t3);padding:14px 10px 6px}
+.sb-item{padding:9px 12px;border-radius:8px;cursor:pointer;display:flex;align-items:center;gap:10px;transition:background .12s;margin-bottom:1px;position:relative}
+.sb-item:hover{background:var(--surface2)}
+.sb-item.active{background:var(--surface2)}
+.sb-item .dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.sb-item .title{font-size:13px;color:var(--t2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1}
+.sb-item.active .title{color:var(--t1)}
+.sb-item .del{opacity:0;border:none;background:none;color:var(--t3);cursor:pointer;padding:2px;border-radius:4px;display:grid;place-items:center;transition:all .12s}
+.sb-item:hover .del{opacity:1}
+.sb-item .del:hover{color:#f87171}
+.sb-item .del svg{width:12px;height:12px}
+.sb-empty{text-align:center;color:var(--t3);font-size:12px;padding:20px 10px}
+
+.sb-foot{padding:14px 18px;border-top:1px solid var(--border);font-size:10px;color:var(--t3);text-align:center;letter-spacing:.02em}
+
+/* ---- HEADER ---- */
+.header{height:52px;display:flex;align-items:center;padding:0 20px;border-bottom:1px solid var(--border);background:rgba(8,8,12,.85);backdrop-filter:blur(16px);flex-shrink:0;gap:10px}
+.hamburger{display:none;border:none;background:none;color:var(--t2);cursor:pointer;padding:4px;border-radius:6px}
+.hamburger:hover{background:var(--surface2)}
+.hamburger svg{width:18px;height:18px}
+.h-title{font-size:13px;font-weight:500;color:var(--t2);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.h-badge{font-size:10px;font-weight:600;padding:3px 8px;border-radius:20px;font-family:'JetBrains Mono',monospace;letter-spacing:.01em}
+.h-badge.claude{background:rgba(212,165,116,.1);color:var(--claude);border:1px solid rgba(212,165,116,.15)}
+.h-badge.chatgpt{background:rgba(16,163,127,.1);color:var(--gpt);border:1px solid rgba(16,163,127,.15)}
+.h-badge.gemini{background:rgba(105,139,247,.1);color:var(--gemini);border:1px solid rgba(105,139,247,.15)}
+
+/* ---- MESSAGES ---- */
+.messages{flex:1;overflow-y:auto;scroll-behavior:smooth}
+.messages::-webkit-scrollbar{width:5px}
+.messages::-webkit-scrollbar-thumb{background:var(--t3);border-radius:3px}
+.m-inner{max-width:720px;margin:0 auto;padding:24px 24px 12px}
+
+/* welcome */
+.welcome{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:60vh;text-align:center;animation:fadeIn .6s ease}
+.w-orb{width:80px;height:80px;border-radius:24px;position:relative;margin-bottom:32px;display:grid;place-items:center}
+.w-orb::before{content:'';position:absolute;inset:-2px;border-radius:26px;background:conic-gradient(from 180deg,var(--accent),var(--gemini),var(--gpt),var(--claude),var(--accent));animation:orbSpin 6s linear infinite;opacity:.7}
+.w-orb::after{content:'';position:absolute;inset:0;border-radius:24px;background:var(--bg)}
+.w-orb svg{position:relative;z-index:1;width:32px;height:32px;color:var(--accent)}
+.w-orb-glow{position:absolute;inset:-30px;border-radius:50%;background:radial-gradient(circle,rgba(167,139,250,.15),transparent 70%);animation:orbPulse 4s ease-in-out infinite;z-index:-1}
+.welcome h1{font-size:32px;font-weight:800;letter-spacing:-.04em;line-height:1.1;margin-bottom:10px}
+.welcome h1 span{background:linear-gradient(135deg,var(--accent),var(--accent2),var(--gemini));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.welcome p{font-size:15px;color:var(--t2);max-width:380px;line-height:1.6;font-weight:400}
+.w-chips{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:36px;max-width:480px}
+.w-chip{font-size:13px;color:var(--t2);padding:10px 18px;border-radius:40px;border:1px solid var(--border);background:transparent;cursor:pointer;font-family:inherit;transition:all .2s;font-weight:450}
+.w-chip:hover{border-color:var(--accent);color:var(--accent);background:rgba(167,139,250,.05)}
+
+/* msgs */
+.msg{margin-bottom:24px;animation:fadeUp .3s ease}
+.msg.user{display:flex;justify-content:flex-end}
+.msg.user .bubble{background:var(--surface2);border-radius:var(--radius) var(--radius) 4px var(--radius);padding:12px 16px;max-width:65%;font-size:14px;line-height:1.6;color:var(--t1)}
+.msg.ai{display:flex;gap:12px}
+.ai-ava{width:28px;height:28px;border-radius:8px;display:grid;place-items:center;flex-shrink:0;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;margin-top:2px}
+.ai-ava.claude{background:rgba(212,165,116,.12);color:var(--claude);box-shadow:0 0 16px rgba(212,165,116,.12)}
+.ai-ava.chatgpt{background:rgba(16,163,127,.12);color:var(--gpt);box-shadow:0 0 16px rgba(16,163,127,.12)}
+.ai-ava.gemini{background:rgba(105,139,247,.12);color:var(--gemini);box-shadow:0 0 16px rgba(105,139,247,.12)}
+.ai-body{flex:1;min-width:0}
+.ai-head{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.ai-name{font-size:12px;font-weight:600;font-family:'JetBrains Mono',monospace}
+.ai-name.claude{color:var(--claude)}
+.ai-name.chatgpt{color:var(--gpt)}
+.ai-name.gemini{color:var(--gemini)}
+.ai-cat{font-size:10px;color:var(--t3);background:var(--surface2);padding:2px 7px;border-radius:20px;font-weight:500}
+.ai-text{font-size:14px;line-height:1.75;color:var(--t1)}
+.ai-text code{font-family:'JetBrains Mono',monospace;font-size:12px;background:rgba(255,255,255,.06);padding:2px 5px;border-radius:4px;color:var(--accent)}
+.ai-text pre{margin:12px 0;background:rgba(0,0,0,.35);border:1px solid var(--border);border-radius:10px;padding:14px 16px;overflow-x:auto;font-family:'JetBrains Mono',monospace;font-size:12px;line-height:1.6}
+.ai-text pre code{background:none;padding:0;color:var(--t1)}
+.ai-text strong{font-weight:600;color:var(--t1)}
+.ai-text em{color:var(--t2)}
+.ai-actions{display:flex;gap:4px;margin-top:8px;opacity:0;transition:opacity .15s}
+.msg.ai:hover .ai-actions{opacity:1}
+.ai-act{border:none;background:none;color:var(--t3);font-size:11px;cursor:pointer;padding:3px 7px;border-radius:6px;display:flex;align-items:center;gap:4px;font-family:inherit;transition:all .12s}
+.ai-act:hover{background:var(--surface2);color:var(--t2)}
+.ai-act svg{width:12px;height:12px}
+
+/* multi-model tabs */
+.multi{margin-bottom:24px;animation:fadeUp .3s ease}
+.multi-tabs{display:flex;gap:2px;padding:3px;background:var(--surface);border-radius:10px;border:1px solid var(--border);width:fit-content;margin-bottom:14px}
+.multi-tab{font-size:11px;font-weight:600;padding:5px 12px;border-radius:7px;border:none;background:none;cursor:pointer;font-family:'JetBrains Mono',monospace;transition:all .15s;color:var(--t3);display:flex;align-items:center;gap:5px}
+.multi-tab:hover{color:var(--t2)}
+.multi-tab.active{background:var(--surface2);color:var(--t1)}
+.multi-tab.active.claude{color:var(--claude)}
+.multi-tab.active.chatgpt{color:var(--gpt)}
+.multi-tab.active.gemini{color:var(--gemini)}
+.multi-tab .star{color:var(--accent);font-size:9px}
+.multi-panel{display:none}
+.multi-panel.active{display:block}
+
+/* routing indicator — minimal inline */
+.routing{padding:20px 0;animation:fadeIn .2s ease}
+.r-inner{max-width:720px;margin:0 auto;padding:0 24px}
+.r-card{display:flex;align-items:center;gap:14px;padding:16px 20px;background:var(--surface);border:1px solid var(--border);border-radius:12px}
+.r-spinner{width:18px;height:18px;border:2px solid var(--t3);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite}
+.r-text{font-size:13px;color:var(--t2);font-family:'JetBrains Mono',monospace}
+.r-dots{display:flex;gap:6px;margin-left:auto}
+.r-dot{width:20px;height:20px;border-radius:50%;display:grid;place-items:center;font-size:8px;font-weight:700;font-family:'JetBrains Mono',monospace;opacity:.2;border:1px solid var(--border);transition:all .3s ease}
+.r-dot.lit{opacity:1;animation:dotPop .3s ease}
+.r-dot.lit.claude{border-color:var(--claude);color:var(--claude);background:rgba(212,165,116,.1);box-shadow:0 0 12px rgba(212,165,116,.15)}
+.r-dot.lit.chatgpt{border-color:var(--gpt);color:var(--gpt);background:rgba(16,163,127,.1);box-shadow:0 0 12px rgba(16,163,127,.15)}
+.r-dot.lit.gemini{border-color:var(--gemini);color:var(--gemini);background:rgba(105,139,247,.1);box-shadow:0 0 12px rgba(105,139,247,.15)}
+
+/* typing dots */
+.typing{display:flex;gap:4px;padding:6px 0;align-items:center}
+.typing .d{width:5px;height:5px;border-radius:50%;animation:tbounce 1.2s ease-in-out infinite}
+.typing .d:nth-child(2){animation-delay:.2s}
+.typing .d:nth-child(3){animation-delay:.4s}
+.typing .d.claude{background:var(--claude)}
+.typing .d.chatgpt{background:var(--gpt)}
+.typing .d.gemini{background:var(--gemini)}
+
+/* ---- INPUT ---- */
+.input-bar{padding:10px 24px 18px;background:rgba(8,8,12,.9);backdrop-filter:blur(16px);border-top:1px solid var(--border);flex-shrink:0}
+.input-wrap{max-width:720px;margin:0 auto}
+.input-box{position:relative;background:var(--surface);border:1px solid var(--border-h);border-radius:var(--radius);transition:all .2s}
+.input-box:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px rgba(167,139,250,.08),0 0 24px rgba(167,139,250,.06)}
+.input-box textarea{width:100%;padding:14px 52px 14px 18px;background:none;border:none;color:var(--t1);font-size:14px;font-family:inherit;line-height:1.5;resize:none;outline:none;min-height:48px;max-height:180px}
+.input-box textarea::placeholder{color:var(--t3)}
+.btn-send{position:absolute;right:10px;bottom:10px;width:32px;height:32px;border-radius:8px;background:var(--accent);border:none;color:#fff;cursor:pointer;display:grid;place-items:center;transition:all .15s;opacity:.3}
+.btn-send.on{opacity:1;box-shadow:0 0 16px rgba(167,139,250,.2)}
+.btn-send.on:hover{transform:scale(1.06)}
+.btn-send svg{width:15px;height:15px}
+.input-hint{text-align:center;margin-top:8px;font-size:10px;color:var(--t3);letter-spacing:.01em}
+
+/* ---- OVERLAY ---- */
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:15;backdrop-filter:blur(4px)}
+.overlay.on{display:block}
+
+/* ---- ANIMATIONS ---- */
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+@keyframes orbSpin{to{transform:rotate(360deg)}}
+@keyframes orbPulse{0%,100%{opacity:.5;transform:scale(1)}50%{opacity:.8;transform:scale(1.08)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes dotPop{0%{transform:scale(.4);opacity:0}60%{transform:scale(1.2)}100%{transform:scale(1);opacity:1}}
+@keyframes tbounce{0%,60%,100%{transform:translateY(0);opacity:.3}30%{transform:translateY(-3px);opacity:1}}
+
+/* ---- RESPONSIVE ---- */
+@media(max-width:768px){
+  .sidebar{position:fixed;left:0;top:0;bottom:0;transform:translateX(-100%);z-index:30}
+  .sidebar.open{transform:translateX(0)}
+  .hamburger{display:flex}
+  .m-inner,.input-wrap{padding-left:16px;padding-right:16px}
+  .msg.user .bubble{max-width:82%}
+  .welcome h1{font-size:26px}
+  .w-chips{padding:0 8px}
+}
+@media(max-width:480px){
+  .welcome h1{font-size:22px}
+  .w-chip{font-size:12px;padding:8px 14px}
 }
 </style>
 </head>
 <body>
 
 <div class="app">
-  <!-- Sidebar -->
   <aside class="sidebar" id="sidebar">
-    <div class="sidebar-header">
-      <div class="sidebar-brand">
-        <div class="brand-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;color:white">
-            <path d="M12 2L2 7l10 5 10-5-10-5z"/>
-            <path d="M2 17l10 5 10-5"/>
-            <path d="M2 12l10 5 10-5"/>
-          </svg>
-        </div>
-        <div class="brand-text">AI <span>Router</span></div>
+    <div class="sb-head">
+      <div class="sb-logo">
+        <div class="sb-mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div>
+        <div class="sb-wordmark"><span>nexus</span></div>
       </div>
-      <button class="btn-new-chat" id="btnNewChat">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-        New chat
-      </button>
+      <button class="btn-new" id="btnNew" title="New chat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
     </div>
-    <div class="sidebar-search">
-      <div class="search-wrapper">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-        <input type="text" class="search-input" id="searchInput" placeholder="Search conversations...">
-      </div>
+    <div class="sb-list" id="sbList">
+      <div class="sb-label">History</div>
     </div>
-    <div class="sidebar-conversations" id="conversationList">
-      <div class="sidebar-section-label">Recent</div>
-    </div>
-    <div class="sidebar-footer">
-      Mock responses &middot; No API keys needed
-    </div>
+    <div class="sb-foot">AI chooses the model &middot; You get the best answer</div>
   </aside>
 
-  <!-- Mobile overlay -->
   <div class="overlay" id="overlay"></div>
 
-  <!-- Main chat area -->
   <div class="main">
     <div class="header">
-      <button class="hamburger" id="hamburger">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
-      </button>
-      <div class="header-title" id="headerTitle">New Chat</div>
-      <div class="header-badges" id="headerBadges"></div>
-      <button class="header-mode" id="headerMode" title="Routing mode">AUTO</button>
+      <button class="hamburger" id="hamburger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
+      <div class="h-title" id="hTitle">New chat</div>
+      <div id="hBadges" style="display:flex;gap:5px"></div>
     </div>
 
     <div class="messages" id="messages">
-      <div class="messages-inner" id="messagesInner">
-        <!-- Welcome screen or messages render here -->
-      </div>
-    </div>
-
-    <div class="routing-viz" id="routingViz">
-      <div class="routing-container">
-        <div class="routing-card">
-          <div class="routing-phase" id="phase1">
-            <div class="routing-dot" id="dot1"></div>
-            <span class="routing-label" id="label1">Analyzing prompt...</span>
-          </div>
-          <div class="routing-phase" id="phase2">
-            <div class="routing-dot" id="dot2"></div>
-            <span class="routing-label" id="label2">Selecting optimal model...</span>
-            <div class="routing-model-icons">
-              <div class="routing-model-dot claude-dot" id="routeDotClaude">C</div>
-              <div class="routing-model-dot chatgpt-dot" id="routeDotChatgpt">G</div>
-              <div class="routing-model-dot gemini-dot" id="routeDotGemini">Gm</div>
-            </div>
-          </div>
-          <div class="routing-phase" id="phase3">
-            <div class="routing-dot" id="dot3"></div>
-            <span class="routing-label" id="label3">Connecting...</span>
-          </div>
-        </div>
-      </div>
+      <div class="m-inner" id="mInner"></div>
     </div>
 
     <div class="input-bar">
-      <div class="input-bar-inner">
-        <div class="input-row">
-          <div class="input-wrapper">
-            <textarea class="input-textarea" id="inputTextarea" placeholder="Ask anything... I'll route to the best AI model" rows="1"></textarea>
-            <button class="btn-send" id="btnSend">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-            </button>
-          </div>
+      <div class="input-wrap">
+        <div class="input-box">
+          <textarea id="input" placeholder="Just ask. Nexus picks the best AI." rows="1"></textarea>
+          <button class="btn-send" id="btnSend"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button>
         </div>
-        <div class="input-footer">
-          <div class="mode-selector">
-            <button class="mode-btn active" data-mode="auto">Auto</button>
-            <button class="mode-btn" data-mode="multi">Multi</button>
-            <button class="mode-btn" data-mode="claude">Claude</button>
-            <button class="mode-btn" data-mode="chatgpt">GPT</button>
-            <button class="mode-btn" data-mode="gemini">Gemini</button>
-          </div>
-          <span>Enter to send &middot; Shift+Enter for newline</span>
-        </div>
+        <div class="input-hint">Nexus analyzes your prompt and routes to the optimal model automatically</div>
       </div>
     </div>
   </div>
 </div>
 
 <script>
-// ============================================
-// AI ROUTER — Complete JS Engine
-// ============================================
-(function() {
-  'use strict';
+(function(){
+'use strict';
 
-  // ---- DOM refs ----
-  const $ = (sel) => document.querySelector(sel);
-  const $$ = (sel) => document.querySelectorAll(sel);
+const $=s=>document.querySelector(s);
+const sidebar=$('#sidebar'),overlay=$('#overlay'),sbList=$('#sbList'),hTitle=$('#hTitle'),hBadges=$('#hBadges');
+const messagesEl=$('#messages'),mInner=$('#mInner'),input=$('#input'),btnSend=$('#btnSend');
 
-  const sidebar = $('#sidebar');
-  const overlay = $('#overlay');
-  const hamburger = $('#hamburger');
-  const btnNewChat = $('#btnNewChat');
-  const searchInput = $('#searchInput');
-  const conversationList = $('#conversationList');
-  const headerTitle = $('#headerTitle');
-  const headerBadges = $('#headerBadges');
-  const headerMode = $('#headerMode');
-  const messagesEl = $('#messages');
-  const messagesInner = $('#messagesInner');
-  const routingViz = $('#routingViz');
-  const inputTextarea = $('#inputTextarea');
-  const btnSend = $('#btnSend');
+let convos=JSON.parse(localStorage.getItem('nexus_c')||'[]');
+let activeId=null,busy=false;
 
-  // ---- State ----
-  let conversations = JSON.parse(localStorage.getItem('ai_router_convos') || '[]');
-  let activeConvoId = null;
-  let routingMode = 'auto'; // auto | multi | claude | chatgpt | gemini
-  let isProcessing = false;
+const M={
+  claude:{name:'Claude',abbr:'C',cls:'claude'},
+  chatgpt:{name:'ChatGPT',abbr:'G',cls:'chatgpt'},
+  gemini:{name:'Gemini',abbr:'Gm',cls:'gemini'}
+};
 
-  // ---- Model definitions ----
-  const MODELS = {
-    claude: { name: 'Claude', abbr: 'C', color: 'claude', icon: 'C' },
-    chatgpt: { name: 'ChatGPT', abbr: 'G', color: 'chatgpt', icon: 'G' },
-    gemini: { name: 'Gemini', abbr: 'Gm', color: 'gemini', icon: 'Gm' }
-  };
+// ---- CLASSIFIER ----
+const CAT={
+  coding:{kw:['code','function','bug','debug','regex','api','sql','python','javascript','typescript','react','css','html','algorithm','programming','compile','runtime','syntax','class','method','variable','loop','array','git','deploy','server','database','query','endpoint','refactor','test','component','framework','library','npm','docker','script','terminal','bash','rust','golang','swift','kotlin'],model:'claude',label:'Code'},
+  image:{kw:['generate image','draw','create picture','design','illustration','sketch','render','visual','art','painting','graphic','logo','mockup','wireframe','ui design','create an image','make an image','picture of'],model:'gemini',label:'Visual'},
+  research:{kw:['explain','what is','history of','compare','analyze','define','difference between','how does','why does','overview','summary','research','study','who invented','when was','statistics','trend'],model:'chatgpt',label:'Research'},
+  creative:{kw:['write a story','poem','script','creative','brainstorm','fiction','narrative','dialogue','plot','novel','song lyrics','screenplay','blog post','article','essay','rewrite','improve this writing'],model:'claude',label:'Creative'},
+  math:{kw:['calculate','solve','equation','proof','probability','integral','derivative','matrix','math','formula','geometry','algebra','calculus','theorem','compute','optimization'],model:'chatgpt',label:'Math'},
+  multi:{kw:['compare answers','ask all','get opinions','all models','every model','each model','side by side','compare models','which ai','best answer'],model:'all',label:'Multi-Model'}
+};
 
-  // ---- Prompt classification ----
-  const CATEGORIES = {
-    coding: {
-      keywords: ['code', 'function', 'bug', 'debug', 'regex', 'api', 'sql', 'python', 'javascript', 'typescript', 'react', 'css', 'html', 'algorithm', 'data structure', 'programming', 'developer', 'compile', 'runtime', 'syntax', 'class', 'method', 'variable', 'loop', 'array', 'object', 'import', 'module', 'package', 'git', 'deploy', 'server', 'database', 'query', 'endpoint', 'refactor', 'test', 'unit test', 'component', 'framework', 'library', 'npm', 'pip', 'cargo', 'rust', 'golang', 'java', 'c++', 'swift', 'kotlin', 'docker', 'kubernetes', 'aws', 'script', 'terminal', 'command line', 'bash', 'shell'],
-      defaultModel: 'claude',
-      label: 'Coding'
-    },
-    image: {
-      keywords: ['generate image', 'draw', 'create picture', 'design', 'illustration', 'sketch', 'render', 'visual', 'art', 'painting', 'graphic', 'logo', 'icon design', 'mockup', 'wireframe', 'ui design', 'generate a', 'create an image', 'make an image', 'picture of'],
-      defaultModel: 'gemini',
-      label: 'Image / Visual'
-    },
-    research: {
-      keywords: ['explain', 'what is', 'history of', 'compare', 'analyze', 'define', 'difference between', 'how does', 'why does', 'overview', 'summary', 'research', 'study', 'evidence', 'source', 'reference', 'who invented', 'when was', 'statistics', 'data about', 'trend', 'report'],
-      defaultModel: 'chatgpt',
-      label: 'Research'
-    },
-    creative: {
-      keywords: ['write a story', 'poem', 'script', 'creative', 'brainstorm', 'fiction', 'narrative', 'character', 'dialogue', 'plot', 'novel', 'song lyrics', 'screenplay', 'blog post', 'article', 'essay', 'copywriting', 'tagline', 'slogan', 'content', 'rewrite', 'improve this writing', 'make it sound'],
-      defaultModel: 'claude',
-      label: 'Creative'
-    },
-    math: {
-      keywords: ['calculate', 'solve', 'equation', 'proof', 'probability', 'integral', 'derivative', 'matrix', 'statistics', 'math', 'formula', 'geometry', 'algebra', 'calculus', 'theorem', 'mathematical', 'compute', 'number theory', 'optimization'],
-      defaultModel: 'chatgpt',
-      label: 'Math / Logic'
-    },
-    multi: {
-      keywords: ['compare answers', 'ask all', 'get opinions', 'all models', 'every model', 'each model', 'side by side', 'compare models', 'which ai', 'best answer'],
-      defaultModel: 'all',
-      label: 'Multi-Model'
-    }
-  };
+function classify(text){
+  const l=text.toLowerCase();
+  let best=null,bestS=0;
+  for(const[k,v]of Object.entries(CAT)){
+    let s=0;
+    for(const w of v.kw) if(l.includes(w)) s+=w.split(' ').length;
+    if(s>bestS){bestS=s;best=k}
+  }
+  return best||(l.includes('?')?'research':'creative');
+}
 
-  function classifyPrompt(text) {
-    const lower = text.toLowerCase();
-    let bestCategory = null;
-    let bestScore = 0;
+function route(text){
+  const cat=classify(text);
+  const def=CAT[cat];
+  if(def.model==='all') return{models:['claude','chatgpt','gemini'],cat,rec:'claude'};
+  return{models:[def.model],cat,rec:def.model};
+}
 
-    for (const [catName, cat] of Object.entries(CATEGORIES)) {
-      let score = 0;
-      for (const kw of cat.keywords) {
-        if (lower.includes(kw)) {
-          score += kw.split(' ').length; // multi-word matches score higher
+// ---- MOCK RESPONSES ----
+const R={
+claude:{
+coding:[
+`Here's a clean approach:
+
+\`\`\`python
+def solve(data):
+    parsed = parse_input(data)
+    validated = validate(parsed)
+    return transform(validated)
+\`\`\`
+
+Each function has a single responsibility — easy to test and debug individually. The pipeline pattern keeps the data flow explicit.
+
+The key insight: separate *what* you're doing from *how*. Parse first, validate second, transform last. Never mix concerns.`,
+`The issue is likely in state management. Here's the fix:
+
+\`\`\`javascript
+const state = new Map();
+function update(key, val) {
+  if (state.get(key) === val) return;
+  state.set(key, val);
+  queueMicrotask(render);
+}
+\`\`\`
+
+This batches updates and skips redundant re-renders. \`queueMicrotask\` ensures we only paint once per tick.`
+],
+creative:[
+`The lighthouse keeper hadn't spoken to anyone in forty-three days. Not because there was no one to speak to — the radio crackled with coastal traffic every evening — but because silence had become a language he was finally fluent in.
+
+He tracked time by the rhythm of the lamp: twelve seconds of light, twelve seconds of dark. A mechanical heartbeat for a building that had outlived its purpose.
+
+*He hadn't.*
+
+---
+
+I focused on the tension between isolation and connection. The rhythm motif mirrors both the lighthouse and the keeper's internal state.`,
+`Three directions, ranked by impact:
+
+**Minimalist** — Strip to essentials. White space does the heavy lifting. This works when the core idea is strong enough to stand alone.
+
+**Layered** — Interwoven threads that converge. Higher effort, richer payoff.
+
+**Subversive** — Break the conventions deliberately. Risky but memorable.
+
+My instinct: Minimalist. Simplicity has the most impact here.`
+],
+research:[`**Core Concept:** This involves the interaction between multiple complex systems.
+
+1. **Historical context** — Emerged from 1960s-70s work, building on earlier theory
+2. **Current state** — Modern implementations converge on a few dominant approaches
+3. **Key tradeoff** — Performance vs. interpretability. Always.
+
+The nuance most people miss: theoretical ideal and practical implementation diverge *significantly*. Real-world apps use approximations that work well enough for specific cases.`],
+math:[`Working through this systematically:
+
+\`\`\`
+Step 1: f(x) = ax² + bx + c
+Step 2: x = (-b ± √(b²-4ac)) / 2a
+Step 3: Simplify...
+\`\`\`
+
+The solution has a clean closed form. The key insight is recognizing the underlying symmetry — once you see that, the path becomes clear.`],
+image:[`I'd approach the design conceptually:
+
+**Direction:** Rule of thirds composition. Muted earth tones with one saturated accent. Golden hour lighting — warm highlights, cool shadows.
+
+For generation, Gemini is the better tool. But I can write optimized prompts that produce significantly better results.`]
+},
+chatgpt:{
+research:[
+`Great question. Here's the current understanding:
+
+**Key findings** — 2023-2024 studies show significant progress. The consensus is shifting toward a more nuanced framework.
+
+**Historical context** — The field started mid-20th century. Early models were crude but foundational.
+
+**Current consensus** — Interaction effects matter more than any single factor. Recent meta-analyses show a moderate but robust effect size.
+
+**Bottom line** — Focus on controllable variables. Accept uncertainty in outcomes. A few key factors drive most of the variance.`,
+`| Factor | Option A | Option B | Option C |
+|--------|----------|----------|----------|
+| Speed | High | Medium | Very High |
+| Cost | Low | Medium | High |
+| Ease | Medium | High | Low |
+
+**Option A** wins on value. **Option B** is most accessible. **Option C** is the power user choice.
+
+The trend is toward C's approach, but A remains the pragmatic pick for most use cases today.`
+],
+math:[`Solving step by step:
+
+1. Variables and constraints: let x be the primary variable, x > 0
+2. Taking the derivative:
+   \`f'(x) = 2ax + b = 0 → x* = -b/(2a)\`
+3. Second derivative test: \`f''(x) = 2a > 0 ✓\`
+
+**Answer:** x* = -b/(2a)
+
+Global minimum confirmed — the function is convex. Geometrically, it's the vertex of the parabola.`],
+coding:[`Here's my approach:
+
+\`\`\`python
+def process_data(items, filter_key=None):
+    results = []
+    for item in items:
+        if filter_key and filter_key not in item:
+            continue
+        processed = {
+            'id': item.get('id'),
+            'value': item.get('value', 0) * 1.1,
+            'status': 'active'
         }
-      }
-      if (score > bestScore) {
-        bestScore = score;
-        bestCategory = catName;
-      }
+        results.append(processed)
+    return sorted(results, key=lambda x: x['value'], reverse=True)
+\`\`\`
+
+The optional filter keeps it flexible without complexity. Sorting the output makes results immediately useful.`],
+creative:[`*The last email*
+
+She wrote it seventeen times. Deleted it sixteen.
+
+The seventeenth version was three words: "I understand now."
+
+She stared at the cursor blinking after the period. That period was doing a lot of work — holding back a year of conversations that had slowly shifted from exclamation marks to ellipses to this.
+
+Her finger hovered over Send. The office hummed its fluorescent lullaby.
+
+She pressed it.`],
+image:[`For image generation, structure your prompt like this:
+
+\`[Subject], [style], [lighting], [mood], [details], [camera angle]\`
+
+**Example:** "A serene mountain lake at dawn, photorealistic, golden hour lighting, peaceful, morning mist, wide-angle, 8K"
+
+Gemini would be the ideal model for actually rendering this.`]
+},
+gemini:{
+image:[
+`Here's the art direction:
+
+**Composition:** Centered subject, atmospheric depth. Foreground at 30% opacity for layering.
+
+**Palette:**
+- Primary: #2D3436 deep charcoal
+- Accent: #E17055 coral
+- Highlight: #FFEAA7 soft gold
+
+**Style:** Clean geometry with organic texture overlay. Subtle grain (ISO 400). Shallow DoF.
+
+Output: 1024x1024 base, upscalable to 4K. The visual balances minimalism with enough detail to feel crafted, not sterile.`,
+`Layer-by-layer:
+
+**Background** — Midnight blue → dark purple gradient. Subtle star field.
+**Mid-ground** — Semi-transparent neon geometry. Tron meets watercolor.
+**Foreground** — Flat style with careful shadow work.
+**Effects** — Bloom, chromatic aberration at edges, lens flare (sparingly).
+
+Keywords: Futuristic. Ethereal. Luminous. Precise.`
+],
+research:[`**Quick answer:** Well-established science, strong consensus, mechanisms still being refined.
+
+**How it works:**
+1. Input → raw data enters
+2. Processing → recursive transformations (this is the part most explanations miss)
+3. Output → refined result with measurable confidence
+
+**State of the art:**
+- 94% accuracy on standard benchmarks (2024)
+- Multimodal outperforms single-mode by 12-18%
+- Compute efficiency frontier shifting rapidly
+
+The practical applications have outpaced theoretical understanding. We know it works — we're still figuring out why some approaches work better.`],
+coding:[`Optimized for efficiency:
+
+\`\`\`typescript
+async function processInBatches<T, R>(
+  items: T[],
+  processor: (item: T) => Promise<R>,
+  config: { batchSize: number; maxRetries: number }
+): Promise<R[]> {
+  const results: R[] = [];
+  for (let i = 0; i < items.length; i += config.batchSize) {
+    const batch = items.slice(i, i + config.batchSize);
+    const settled = await Promise.allSettled(
+      batch.map(item => processor(item))
+    );
+    for (const r of settled)
+      if (r.status === 'fulfilled') results.push(r.value);
+  }
+  return results;
+}
+\`\`\`
+
+\`Promise.allSettled\` over \`Promise.all\` — one failure won't tank the batch. Scales from dozens to millions.`],
+creative:[`**Signal // Noise**
+
+We built machines that dream in data,
+fed them every word we'd ever typed,
+every photo, every search at 3 AM
+for "why does everything feel"
+
+and they learned us.
+
+Not the versions we perform —
+the curated feeds, the careful captions —
+but the version that exists
+in the negative space between clicks.
+
+The pause before deleting a draft.
+The search query we rephrased
+because the first one was too honest.
+
+*They know us by our hesitations.*`],
+math:[`Geometric intuition first:
+
+\`\`\`
+    ╭─────╮
+   ╱       ╲
+  ╱    ★    ╲    ← minimum
+ ╱           ╲
+───────────────
+\`\`\`
+
+**Formally:** ∇f(x) = 0 → x* = -A⁻¹b/2
+
+**Verification:** Hessian = 2A, positive definite. Global minimum confirmed.
+
+**Result:** x* ≈ 3.14159 — suspiciously close to π, suggesting a deeper geometric connection.`]
+}
+};
+
+function mockResponse(model,cat){
+  const pool=R[model];
+  if(!pool) return "Thinking...";
+  let arr=pool[cat];
+  if(!arr){const keys=Object.keys(pool);arr=pool[keys[Math.floor(Math.random()*keys.length)]];}
+  return arr[Math.floor(Math.random()*arr.length)];
+}
+
+// ---- UTILS ----
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+function genId(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7)}
+function esc(t){const d=document.createElement('div');d.textContent=t;return d.innerHTML}
+
+function fmt(text){
+  let h=esc(text);
+  h=h.replace(/```(\w*)\n([\s\S]*?)```/g,(_,l,c)=>'<pre><code>'+c.trim()+'</code></pre>');
+  h=h.replace(/`([^`]+)`/g,'<code>$1</code>');
+  h=h.replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>');
+  h=h.replace(/\*(.+?)\*/g,'<em>$1</em>');
+  h=h.replace(/^---$/gm,'<hr style="border:none;border-top:1px solid var(--border);margin:14px 0">');
+  h=h.replace(/\n/g,'<br>');
+  return h;
+}
+
+// ---- CONVERSATION STATE ----
+function save(){localStorage.setItem('nexus_c',JSON.stringify(convos))}
+function active(){return convos.find(c=>c.id===activeId)}
+
+function newConvo(){
+  const c={id:genId(),title:'New chat',msgs:[],ts:Date.now()};
+  convos.unshift(c);save();return c;
+}
+
+function switchTo(id){activeId=id;render();renderSb();updateH()}
+
+function delConvo(id){
+  convos=convos.filter(c=>c.id!==id);save();
+  if(activeId===id){activeId=null;render();updateH()}
+  renderSb();
+}
+
+// ---- RENDER ----
+function render(){
+  const c=active();
+  if(!c||!c.msgs.length){renderWelcome();return}
+  let h='';
+  for(const m of c.msgs){
+    if(m.role==='user'){
+      h+=`<div class="msg user"><div class="bubble">${esc(m.content)}</div></div>`;
+    }else if(m.multi){
+      h+=renderMulti(m);
+    }else{
+      h+=renderAi(m);
     }
-
-    if (!bestCategory) {
-      // Default to research for general questions, claude for everything else
-      bestCategory = lower.includes('?') ? 'research' : 'creative';
-    }
-
-    return bestCategory;
   }
+  mInner.innerHTML=h;
+  scrollEnd();
+  bindTabs();
+}
 
-  function getRouteForPrompt(text) {
-    if (routingMode !== 'auto' && routingMode !== 'multi') {
-      return {
-        models: [routingMode],
-        category: classifyPrompt(text),
-        recommended: routingMode
-      };
-    }
-
-    const category = classifyPrompt(text);
-    const catDef = CATEGORIES[category];
-
-    if (routingMode === 'multi' || catDef.defaultModel === 'all') {
-      return {
-        models: ['claude', 'chatgpt', 'gemini'],
-        category,
-        recommended: catDef.defaultModel === 'all' ? 'claude' : catDef.defaultModel
-      };
-    }
-
-    return {
-      models: [catDef.defaultModel],
-      category,
-      recommended: catDef.defaultModel
-    };
-  }
-
-  // ---- Mock responses ----
-  const MOCK_RESPONSES = {
-    claude: {
-      coding: [
-        "Here's a clean implementation approach. Let me break down the solution step by step:\n\nFirst, let's consider the core logic:\n\n```python\ndef solve(data):\n    # Process input with clear separation of concerns\n    parsed = parse_input(data)\n    validated = validate(parsed)\n    return transform(validated)\n```\n\nThe key insight is structuring this as a pipeline of pure transformations. Each function has a single responsibility, making it easy to test and debug individually.\n\nI'd also recommend adding type hints and a comprehensive docstring to make the interface self-documenting. Want me to expand on any part of this?",
-        "Let me analyze this code pattern. The issue is likely in how the state is being managed. Here's my recommendation:\n\n```javascript\n// Before (problematic)\nlet state = {};\nfunction update(key, val) {\n  state[key] = val;\n  render(); // causes cascading rerenders\n}\n\n// After (optimized)\nconst state = new Map();\nfunction update(key, val) {\n  if (state.get(key) === val) return;\n  state.set(key, val);\n  queueMicrotask(render); // batched update\n}\n```\n\nThis batches state updates and avoids unnecessary re-renders. The equality check prevents redundant work, and `queueMicrotask` ensures we only render once per tick."
-      ],
-      creative: [
-        "Here's a draft that weaves together atmosphere and character:\n\n---\n\nThe lighthouse keeper hadn't spoken to anyone in forty-three days. Not because there was no one to speak to — the radio crackled with coastal traffic every evening — but because silence had become a language he was finally fluent in.\n\nHe tracked time by the rhythm of the lamp: twelve seconds of light, twelve seconds of dark. A mechanical heartbeat for a building that had outlived its purpose.\n\n---\n\nI focused on sensory grounding and the tension between isolation and connection. The rhythm motif mirrors both the lighthouse and the keeper's internal state. Would you like me to develop this further or adjust the tone?",
-        "Let me brainstorm some directions for this. I'll organize by approach and feasibility:\n\n**Approach A — Minimalist**\nStrip everything to essentials. Let white space do the heavy lifting. Every element earns its place or gets cut. This works when the core idea is strong enough to stand alone.\n\n**Approach B — Layered Narrative**\nBuild complexity through interwoven threads. Multiple perspectives or timelines that converge. Higher effort but creates a richer experience.\n\n**Approach C — Subversive**\nTake the expected format and deliberately break the conventions. Use reader expectations against them. Risky but memorable when it works.\n\nMy instinct says Approach A is the strongest fit here — simplicity tends to have the most impact. Shall I develop any of these?"
-      ],
-      research: [
-        "Let me provide a structured analysis of this topic.\n\n**Core Concept:** At its foundation, this involves the interaction between multiple complex systems. The key frameworks to understand are:\n\n1. **Historical context** — This emerged from work in the 1960s-70s, building on earlier theoretical foundations\n2. **Current state** — Modern implementations have largely converged on a few dominant approaches\n3. **Key tradeoffs** — There's always a tension between performance and interpretability\n\nThe most important nuance that often gets missed: the theoretical ideal and practical implementation diverge significantly. Most real-world applications use approximations that work well enough for specific use cases.\n\nWant me to go deeper on any of these dimensions?",
-      ],
-      math: [
-        "Let me work through this systematically.\n\n**Given:** We need to find the solution to this mathematical problem.\n\n**Approach:** I'll use a direct algebraic method, which is cleaner than numerical approximation here.\n\n```\nStep 1: Identify the structure\n  f(x) = ax² + bx + c\n\nStep 2: Apply the relevant theorem\n  By the quadratic formula: x = (-b ± √(b²-4ac)) / 2a\n\nStep 3: Simplify\n  Substituting our values and simplifying...\n```\n\nThe elegant result: the solution has a clean closed form. This is one of those cases where the algebra works out beautifully.\n\nThe key insight is recognizing the underlying symmetry — once you see that, the solution path becomes clear."
-      ],
-      image: [
-        "While I specialize more in code and text, here's how I'd approach the design conceptually:\n\n**Visual Direction:**\n- Composition: Rule of thirds, with the primary subject placed at the left power point\n- Color palette: Muted earth tones with one saturated accent color for contrast\n- Lighting: Golden hour feel — warm highlights, cool shadows\n- Style: Clean and modern with subtle texture\n\nFor actual image generation, Gemini would be the better choice. But I can help you write detailed prompts that produce better results, or create SVG/CSS-based graphics and design specifications. Want me to draft an optimized prompt?"
-      ]
-    },
-    chatgpt: {
-      research: [
-        "Great question! Let me break this down comprehensively.\n\n## Overview\n\nThis is a fascinating topic that spans multiple disciplines. Here's what the current research tells us:\n\n**Key Findings:**\n- Studies from 2023-2024 show significant progress in this area\n- The consensus among researchers is shifting toward a more nuanced understanding\n- There are roughly 3 competing frameworks, each with distinct strengths\n\n**Historical Context:**\nThe field originated in the mid-20th century when researchers first observed the phenomenon. Early models were simplistic, but they laid the groundwork for modern approaches.\n\n**Current Consensus:**\nMost experts now agree that the interaction effects are more important than any single factor. The meta-analyses published in the last two years point to a moderate but robust effect size.\n\n**Practical Implications:**\nFor real-world applications, this means focusing on the controllable variables while accepting uncertainty in the outcome. The 80/20 rule applies here — a few key factors drive most of the variance.\n\nWould you like me to dive deeper into any specific aspect?",
-        "Here's a detailed comparison based on the latest available data:\n\n| Factor | Option A | Option B | Option C |\n|--------|----------|----------|----------|\n| Performance | High | Medium | Very High |\n| Cost | Low | Medium | High |\n| Ease of Use | Medium | High | Low |\n| Community | Large | Medium | Growing |\n\n**Analysis:**\n\nOption A excels in performance-per-dollar but has a steeper learning curve. Option B is the most accessible — it's what I'd recommend if you're just getting started. Option C is the power user choice, offering the best raw capabilities at a premium.\n\nThe trend is clearly moving toward Option C's approach, but Option A remains the pragmatic choice for most use cases today. The community support matters more than raw benchmarks in practice."
-      ],
-      math: [
-        "Let's solve this step by step.\n\n**Problem Setup:**\nWe need to find the optimal solution given the constraints.\n\n**Solution:**\n\n1. First, let's establish our variables and constraints:\n   - Let x represent the primary variable\n   - Subject to: x > 0, and our boundary conditions\n\n2. Taking the derivative and setting it to zero:\n   ```\n   f'(x) = 2ax + b = 0\n   x* = -b/(2a)\n   ```\n\n3. Verifying this is a minimum (second derivative test):\n   ```\n   f''(x) = 2a > 0 ✓\n   ```\n\n4. **Final Answer:** x* = -b/(2a)\n\nThis gives us the global minimum since the function is convex. The geometric interpretation is the vertex of the parabola.\n\n**Quick sanity check:** Plugging back in confirms the solution satisfies all constraints. ✓"
-      ],
-      coding: [
-        "Here's how I'd approach this implementation:\n\n```python\nfrom typing import List, Optional\n\ndef process_data(items: List[dict], \n                  filter_key: Optional[str] = None) -> List[dict]:\n    \"\"\"\n    Process and transform a list of data items.\n    \n    Args:\n        items: Raw data dictionaries\n        filter_key: Optional key to filter by\n    \n    Returns:\n        Processed and filtered results\n    \"\"\"\n    results = []\n    for item in items:\n        if filter_key and filter_key not in item:\n            continue\n        # Transform the item\n        processed = {\n            'id': item.get('id'),\n            'value': item.get('value', 0) * 1.1,\n            'status': 'active'\n        }\n        results.append(processed)\n    \n    return sorted(results, key=lambda x: x['value'], reverse=True)\n```\n\nA few notes on this approach:\n- Type hints make the interface clear\n- The optional filter provides flexibility without complexity\n- Sorting the output makes the results immediately useful\n- The 1.1 multiplier is a placeholder — you'd replace this with your actual transformation logic\n\nWant me to add error handling or tests?"
-      ],
-      creative: [
-        "Here's what I've come up with:\n\n---\n\n*The last email*\n\nShe wrote it seventeen times. Deleted it sixteen.\n\nThe seventeenth version was three words: \"I understand now.\"\n\nShe stared at the cursor blinking after the period. That period was doing a lot of work — holding back a year of conversations that had slowly shifted from exclamation marks to ellipses to this. A single, declarative sentence.\n\nHer finger hovered over Send. The office hummed its fluorescent lullaby.\n\nShe pressed it.\n\n---\n\nI aimed for emotional compression — saying the most with the least. The tech details (email, cursor, office) ground the emotion in something mundane and universal. Happy to try a different angle if you'd prefer!"
-      ],
-      image: [
-        "For image generation, I'd suggest this approach:\n\n**Prompt Engineering Tips:**\n1. Start with the subject, then style, then details\n2. Specify lighting and mood explicitly\n3. Include negative prompts to avoid common issues\n\n**Suggested prompt structure:**\n```\n[Subject], [style], [lighting], [mood], [details], \n[camera angle], [quality modifiers]\n```\n\n**Example:**\n\"A serene mountain lake at dawn, photorealistic style, \ngolden hour lighting, peaceful atmosphere, morning mist \nrising from water, wide-angle perspective, 8K resolution, \nhighly detailed\"\n\nGemini would be the ideal choice for actually generating this image. Want me to refine the prompt further?"
-      ]
-    },
-    gemini: {
-      image: [
-        "I'd be happy to help with this visual concept! Here's my approach:\n\n**Design Specifications:**\n\n`Composition:` Centered subject with atmospheric depth — foreground elements at 30% opacity to create layers.\n\n`Color Palette:`\n- Primary: #2D3436 (deep charcoal)\n- Secondary: #636E72 (warm grey)\n- Accent: #E17055 (coral)\n- Highlight: #FFEAA7 (soft gold)\n\n`Style Notes:`\n- Clean geometric shapes with organic texture overlay\n- Subtle grain filter (ISO 400 equivalent)\n- Depth of field: shallow, f/2.8 equivalent\n\n`Technical Output:`\n- 1024x1024 base resolution\n- Upscalable to 4K\n- Transparent background option available\n\nThe visual would balance minimalism with enough detail to feel crafted rather than sterile. I'd render this with a slight film grain to give it warmth.\n\nShall I describe additional variations or adjust the direction?",
-        "Here's how I'd visualize this concept:\n\n**Art Direction:**\n\nLayer 1 — Background: Deep gradient from midnight blue (#0C1445) to dark purple (#1A0533). Subtle star field with varying opacity points.\n\nLayer 2 — Mid-ground: Abstract geometric shapes in semi-transparent neon. Think Tron meets watercolor — hard edges with soft color bleeds.\n\nLayer 3 — Foreground: The primary subject rendered in a modern flat style with careful shadow work. Key detail areas get extra texture.\n\nLayer 4 — Effects: Bloom on light sources, chromatic aberration at edges, lens flare if it serves the composition (used sparingly).\n\n**Mood Board Keywords:** Futuristic, ethereal, luminous, precise\n\nThis multi-layer approach lets us control depth and atmosphere independently. Each layer can be adjusted without affecting the others."
-      ],
-      research: [
-        "Let me search through what I know on this topic and organize it clearly.\n\n**Quick Answer:**\nThe short version — this is well-established science with strong consensus, though the specific mechanisms are still being refined.\n\n**Detailed Breakdown:**\n\n*Origins:*\nThe concept was first formalized in the 1940s, though practitioners had been using informal versions of it for centuries. The mathematical foundations came from three independent research groups working in parallel.\n\n*How It Works:*\n1. Input stage — raw data enters the system\n2. Processing — multiple transformations applied in sequence\n3. Output — refined result with measurable confidence\n\nThe critical insight that most explanations miss: step 2 is not a single operation but a *recursive* process. The system refines its own processing based on intermediate results.\n\n*Current State of the Art:*\n- 2024 benchmarks show 94% accuracy on standard tasks\n- Multimodal approaches are outperforming single-mode by 12-18%\n- The compute-efficiency frontier is shifting rapidly\n\n*My Take:*\nThis is one of those areas where the practical applications have outpaced theoretical understanding. We know it works, we're still figuring out exactly why certain approaches work better than others."
-      ],
-      coding: [
-        "Here's my implementation with a focus on efficiency:\n\n```typescript\ninterface ProcessConfig {\n  batchSize: number;\n  maxRetries: number;\n  timeout: number;\n}\n\nasync function processInBatches<T, R>(\n  items: T[],\n  processor: (item: T) => Promise<R>,\n  config: ProcessConfig\n): Promise<R[]> {\n  const results: R[] = [];\n  \n  for (let i = 0; i < items.length; i += config.batchSize) {\n    const batch = items.slice(i, i + config.batchSize);\n    const batchResults = await Promise.allSettled(\n      batch.map(item => \n        withRetry(() => processor(item), config.maxRetries)\n      )\n    );\n    \n    for (const result of batchResults) {\n      if (result.status === 'fulfilled') {\n        results.push(result.value);\n      }\n    }\n  }\n  \n  return results;\n}\n```\n\nKey design choices:\n- `Promise.allSettled` over `Promise.all` — one failure doesn't tank the batch\n- Generic types for reusability across different data shapes\n- Configurable batch size for tuning throughput vs. memory\n- Retry logic separated into its own utility\n\nThis pattern scales well from dozens to millions of items."
-      ],
-      creative: [
-        "Here's my take — I went for something with a distinctive rhythm:\n\n---\n\n**Signal // Noise**\n\nWe built machines that dream in data,\nfed them every word we'd ever typed,\nevery photo, every search at 3 AM\nfor \"why does everything feel\"\n\nand they learned us.\n\nNot the versions we perform —\nthe curated feeds, the careful captions —\nbut the version that exists\nin the negative space between clicks.\n\nThe pause before deleting a draft.\nThe search query we rephrased\nbecause the first one was too honest.\n\nThey know us by our hesitations.\n\n---\n\nI explored the intersection of technology and vulnerability. The structure mirrors digital communication — fragmented, interrupted, with meaning in the gaps. Want me to try a completely different style?",
-      ],
-      math: [
-        "Here's the solution with a visual/intuitive approach:\n\n**The Problem:** Finding the optimal solution.\n\n**Intuitive Framework:**\nThink of this geometrically. We're looking for the point where the gradient vanishes — the valley floor in our landscape of possible answers.\n\n```\nVisualization:\n\n    ╭─────╮\n   ╱       ╲\n  ╱    ★    ╲    ← ★ marks the minimum\n ╱           ╲\n╱             ╲\n───────────────\n```\n\n**Formal Solution:**\n\n∇f(x) = 0\n→ 2Ax + b = 0\n→ x* = -A⁻¹b/2\n\n**Verification:**\nThe Hessian H = 2A is positive definite (all eigenvalues > 0), confirming this is indeed a minimum.\n\n**Numerical Result:**\nPlugging in the values: x* ≈ 3.14159 (interesting — it's very close to π, which suggests there may be a deeper geometric connection here).\n\nThe beauty of this problem is that it has a unique global minimum. No need to worry about local optima."
-      ]
-    }
-  };
-
-  function getMockResponse(model, category) {
-    const modelResponses = MOCK_RESPONSES[model];
-    if (!modelResponses) return "I'm not sure how to respond to that.";
-
-    let responses = modelResponses[category];
-    if (!responses) {
-      // Fallback to a random category
-      const categories = Object.keys(modelResponses);
-      responses = modelResponses[categories[Math.floor(Math.random() * categories.length)]];
-    }
-
-    return responses[Math.floor(Math.random() * responses.length)];
-  }
-
-  // ---- Conversation management ----
-  function generateId() {
-    return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
-  }
-
-  function saveConversations() {
-    localStorage.setItem('ai_router_convos', JSON.stringify(conversations));
-  }
-
-  function createConversation() {
-    const convo = {
-      id: generateId(),
-      title: 'New Chat',
-      messages: [],
-      createdAt: Date.now(),
-      updatedAt: Date.now()
-    };
-    conversations.unshift(convo);
-    saveConversations();
-    return convo;
-  }
-
-  function getActiveConversation() {
-    return conversations.find(c => c.id === activeConvoId);
-  }
-
-  function switchConversation(id) {
-    activeConvoId = id;
-    renderMessages();
-    renderSidebar();
-    updateHeader();
-  }
-
-  function deleteConversation(id) {
-    conversations = conversations.filter(c => c.id !== id);
-    saveConversations();
-    if (activeConvoId === id) {
-      activeConvoId = null;
-      renderMessages();
-      updateHeader();
-    }
-    renderSidebar();
-  }
-
-  // ---- Rendering ----
-  function renderWelcome() {
-    messagesInner.innerHTML = `
-      <div class="welcome">
-        <div class="welcome-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M12 2L2 7l10 5 10-5-10-5z"/>
-            <path d="M2 17l10 5 10-5"/>
-            <path d="M2 12l10 5 10-5"/>
-          </svg>
-        </div>
-        <h1>Intelligent Model Routing</h1>
-        <p>Type anything and I'll automatically route your prompt to the best AI model. Coding goes to Claude, research to ChatGPT, visuals to Gemini — or ask all three.</p>
-        <div class="welcome-models">
-          <div class="welcome-model-card claude-card">
-            <div class="wm-dot" style="background:var(--claude);box-shadow:0 0 10px var(--claude-glow)"></div>
-            <div class="wm-name">Claude</div>
-            <div class="wm-desc">Code &middot; Creative</div>
-          </div>
-          <div class="welcome-model-card chatgpt-card">
-            <div class="wm-dot" style="background:var(--chatgpt);box-shadow:0 0 10px var(--chatgpt-glow)"></div>
-            <div class="wm-name">ChatGPT</div>
-            <div class="wm-desc">Research &middot; Math</div>
-          </div>
-          <div class="welcome-model-card gemini-card">
-            <div class="wm-dot" style="background:var(--gemini);box-shadow:0 0 10px var(--gemini-glow)"></div>
-            <div class="wm-name">Gemini</div>
-            <div class="wm-desc">Visual &middot; Multimodal</div>
-          </div>
-        </div>
-        <div class="welcome-suggestions">
-          <button class="suggestion-chip" data-suggestion="Write a Python function to merge two sorted arrays">Write a Python merge sort</button>
-          <button class="suggestion-chip" data-suggestion="Generate an image of a futuristic city at sunset">Futuristic city artwork</button>
-          <button class="suggestion-chip" data-suggestion="What is quantum computing and how does it work?">Explain quantum computing</button>
-          <button class="suggestion-chip" data-suggestion="Compare answers: What's the best programming language for beginners?">Ask all models: best language?</button>
-          <button class="suggestion-chip" data-suggestion="Write a short story about an AI that discovers music">AI discovers music (story)</button>
-          <button class="suggestion-chip" data-suggestion="Solve: what is the integral of x²·e^x dx">Solve an integral</button>
-        </div>
+function renderAi(m){
+  const md=M[m.model]||M.claude;
+  const cat=CAT[m.cat]?.label||'';
+  return`<div class="msg ai">
+    <div class="ai-ava ${md.cls}">${md.abbr}</div>
+    <div class="ai-body">
+      <div class="ai-head">
+        <span class="ai-name ${md.cls}">${md.name}</span>
+        ${cat?`<span class="ai-cat">${cat}</span>`:''}
       </div>
-    `;
-  }
+      <div class="ai-text">${fmt(m.content)}</div>
+      <div class="ai-actions">
+        <button class="ai-act" onclick="navigator.clipboard.writeText(decodeURIComponent('${encodeURIComponent(m.content)}'))"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>Copy</button>
+      </div>
+    </div>
+  </div>`;
+}
 
-  function escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
-  }
-
-  function formatContent(text) {
-    // Simple markdown-like formatting
-    let html = escapeHtml(text);
-
-    // Code blocks (``` ... ```)
-    html = html.replace(/```(\w*)\n([\s\S]*?)```/g, (_, lang, code) => {
-      return '<pre><code>' + code.trim() + '</code></pre>';
-    });
-
-    // Inline code
-    html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
-
-    // Bold
-    html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
-
-    // Italic
-    html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
-
-    // Headers
-    html = html.replace(/^## (.+)$/gm, '<strong style="font-size:15px;display:block;margin:12px 0 6px">$1</strong>');
-
-    // Horizontal rule
-    html = html.replace(/^---$/gm, '<hr style="border:none;border-top:1px solid var(--border-subtle);margin:12px 0">');
-
-    // Line breaks
-    html = html.replace(/\n/g, '<br>');
-
-    return html;
-  }
-
-  function renderMessages() {
-    const convo = getActiveConversation();
-
-    if (!convo || convo.messages.length === 0) {
-      renderWelcome();
-      return;
-    }
-
-    let html = '';
-
-    for (const msg of convo.messages) {
-      if (msg.role === 'user') {
-        html += `<div class="msg user"><div class="msg-bubble">${escapeHtml(msg.content)}</div></div>`;
-      } else if (msg.role === 'ai') {
-        if (msg.multiModel) {
-          // Multi-model response
-          html += renderMultiModelMessage(msg);
-        } else {
-          html += renderAIMessage(msg);
-        }
-      }
-    }
-
-    messagesInner.innerHTML = html;
-    scrollToBottom();
-    bindMultiTabs();
-  }
-
-  function renderAIMessage(msg) {
-    const model = MODELS[msg.model] || MODELS.claude;
-    const categoryLabel = CATEGORIES[msg.category]?.label || '';
-
-    return `
+function renderMulti(m){
+  let tabs='',panels='';
+  m.responses.forEach((r,i)=>{
+    const md=M[r.model];
+    const isRec=r.model===m.rec;
+    const first=i===0;
+    tabs+=`<button class="multi-tab ${md.cls} ${first?'active':''}" data-t="${r.model}">${md.name}${isRec?' <span class="star">&#9733;</span>':''}</button>`;
+    const cat=CAT[m.cat]?.label||'';
+    panels+=`<div class="multi-panel ${first?'active':''}" data-p="${r.model}">
       <div class="msg ai">
-        <div class="msg-avatar ${model.color}-avatar">${model.icon}</div>
-        <div class="msg-content">
-          <div class="msg-model-label" style="color:var(--${model.color})">
-            ${model.name}
-            ${categoryLabel ? `<span class="category-tag">${categoryLabel}</span>` : ''}
-          </div>
-          <div class="msg-bubble ai-bubble ${model.color}-bubble">${formatContent(msg.content)}</div>
-          <div class="msg-actions">
-            <button class="msg-action-btn" onclick="navigator.clipboard.writeText(decodeURIComponent('${encodeURIComponent(msg.content)}'))">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-              Copy
-            </button>
-          </div>
+        <div class="ai-ava ${md.cls}">${md.abbr}</div>
+        <div class="ai-body">
+          <div class="ai-head"><span class="ai-name ${md.cls}">${md.name}</span>${isRec?`<span class="ai-cat" style="color:var(--accent);background:rgba(167,139,250,.1)">Best fit</span>`:''} ${cat?`<span class="ai-cat">${cat}</span>`:''}</div>
+          <div class="ai-text">${fmt(r.content)}</div>
+          <div class="ai-actions"><button class="ai-act" onclick="navigator.clipboard.writeText(decodeURIComponent('${encodeURIComponent(r.content)}'))"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>Copy</button></div>
         </div>
       </div>
-    `;
-  }
+    </div>`;
+  });
+  return`<div class="multi"><div class="multi-tabs">${tabs}</div>${panels}</div>`;
+}
 
-  function renderMultiModelMessage(msg) {
-    const responses = msg.responses; // [{model, content}]
-    const recommended = msg.recommended;
-    const categoryLabel = CATEGORIES[msg.category]?.label || '';
-
-    let tabsHtml = '';
-    let panelsHtml = '';
-
-    responses.forEach((resp, i) => {
-      const model = MODELS[resp.model];
-      const isRec = resp.model === recommended;
-      const isFirst = i === 0;
-
-      tabsHtml += `
-        <button class="multi-tab ${model.color}-tab ${isFirst ? 'active' : ''}" data-tab="${resp.model}">
-          ${model.name}${isRec ? ' <span class="recommended-star" title="Recommended">&#9733;</span>' : ''}
-        </button>
-      `;
-
-      panelsHtml += `
-        <div class="multi-panel ${isFirst ? 'active' : ''}" data-panel="${resp.model}">
-          <div class="msg ai">
-            <div class="msg-avatar ${model.color}-avatar">${model.icon}</div>
-            <div class="msg-content">
-              <div class="msg-model-label" style="color:var(--${model.color})">
-                ${model.name}${isRec ? ' <span class="category-tag" style="background:var(--${model.color}-bg);color:var(--${model.color})">Recommended</span>' : ''}
-                ${categoryLabel ? `<span class="category-tag">${categoryLabel}</span>` : ''}
-              </div>
-              <div class="msg-bubble ai-bubble ${model.color}-bubble">${formatContent(resp.content)}</div>
-              <div class="msg-actions">
-                <button class="msg-action-btn" onclick="navigator.clipboard.writeText(decodeURIComponent('${encodeURIComponent(resp.content)}'))">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-                  Copy
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      `;
+function bindTabs(){
+  document.querySelectorAll('.multi-tabs').forEach(tg=>{
+    const p=tg.closest('.multi');
+    tg.querySelectorAll('.multi-tab').forEach(t=>{
+      t.onclick=()=>{
+        tg.querySelectorAll('.multi-tab').forEach(x=>x.classList.remove('active'));
+        p.querySelectorAll('.multi-panel').forEach(x=>x.classList.remove('active'));
+        t.classList.add('active');
+        p.querySelector(`[data-p="${t.dataset.t}"]`).classList.add('active');
+      };
     });
+  });
+}
 
-    return `
-      <div class="multi-response">
-        <div class="multi-tabs">${tabsHtml}</div>
-        ${panelsHtml}
+function renderWelcome(){
+  mInner.innerHTML=`
+    <div class="welcome">
+      <div class="w-orb">
+        <div class="w-orb-glow"></div>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
       </div>
-    `;
-  }
-
-  function bindMultiTabs() {
-    document.querySelectorAll('.multi-tabs').forEach(tabGroup => {
-      const parent = tabGroup.closest('.multi-response');
-      tabGroup.querySelectorAll('.multi-tab').forEach(tab => {
-        tab.addEventListener('click', () => {
-          const target = tab.dataset.tab;
-          tabGroup.querySelectorAll('.multi-tab').forEach(t => t.classList.remove('active'));
-          parent.querySelectorAll('.multi-panel').forEach(p => p.classList.remove('active'));
-          tab.classList.add('active');
-          parent.querySelector(`[data-panel="${target}"]`).classList.add('active');
-        });
-      });
-    });
-  }
-
-  function renderSidebar() {
-    const search = searchInput.value.toLowerCase();
-    let filtered = conversations;
-    if (search) {
-      filtered = conversations.filter(c =>
-        c.title.toLowerCase().includes(search) ||
-        c.messages.some(m => m.content.toLowerCase().includes(search))
-      );
-    }
-
-    let html = '<div class="sidebar-section-label">Recent</div>';
-
-    if (filtered.length === 0) {
-      html += '<div style="padding:12px;color:var(--text-dim);font-size:12px;text-align:center">No conversations yet</div>';
-    }
-
-    for (const convo of filtered) {
-      const isActive = convo.id === activeConvoId;
-      const lastModel = convo.messages.filter(m => m.role === 'ai').pop();
-      const dotColor = lastModel ? `var(--${lastModel.model || 'router'})` : 'var(--text-dim)';
-
-      html += `
-        <div class="conversation-item ${isActive ? 'active' : ''}" data-convo-id="${convo.id}">
-          <div class="conv-icon" style="background:${dotColor}"></div>
-          <span class="conv-title">${escapeHtml(convo.title)}</span>
-          <button class="conv-delete" data-delete-id="${convo.id}" title="Delete conversation">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-          </button>
-        </div>
-      `;
-    }
-
-    conversationList.innerHTML = html;
-
-    // Bind click handlers
-    conversationList.querySelectorAll('.conversation-item').forEach(item => {
-      item.addEventListener('click', (e) => {
-        if (e.target.closest('.conv-delete')) return;
-        switchConversation(item.dataset.convoId);
-        closeSidebar();
-      });
-    });
-
-    conversationList.querySelectorAll('.conv-delete').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        deleteConversation(btn.dataset.deleteId);
-      });
-    });
-  }
-
-  function updateHeader() {
-    const convo = getActiveConversation();
-    headerTitle.textContent = convo ? convo.title : 'New Chat';
-
-    // Show model badges for the conversation
-    if (convo && convo.messages.length > 0) {
-      const usedModels = new Set();
-      convo.messages.forEach(m => {
-        if (m.model) usedModels.add(m.model);
-        if (m.responses) m.responses.forEach(r => usedModels.add(r.model));
-      });
-
-      headerBadges.innerHTML = Array.from(usedModels).map(model =>
-        `<span class="model-badge ${model}">${MODELS[model]?.name || model}</span>`
-      ).join('');
-    } else {
-      headerBadges.innerHTML = '';
-    }
-  }
-
-  function scrollToBottom() {
-    requestAnimationFrame(() => {
-      messagesEl.scrollTop = messagesEl.scrollHeight;
-    });
-  }
-
-  // ---- Routing animation ----
-  async function playRoutingAnimation(route) {
-    routingViz.classList.add('active');
-
-    const dot1 = $('#dot1'), dot2 = $('#dot2'), dot3 = $('#dot3');
-    const label1 = $('#label1'), label2 = $('#label2'), label3 = $('#label3');
-    const routeDots = {
-      claude: $('#routeDotClaude'),
-      chatgpt: $('#routeDotChatgpt'),
-      gemini: $('#routeDotGemini')
-    };
-
-    // Reset
-    [dot1, dot2, dot3].forEach(d => { d.className = 'routing-dot'; });
-    [label1, label2, label3].forEach(l => { l.className = 'routing-label'; });
-    Object.values(routeDots).forEach(d => { d.className = d.className.replace(' selected', ''); });
-
-    label3.textContent = `Connecting to ${route.models.map(m => MODELS[m].name).join(' + ')}...`;
-
-    // Phase 1: Analyzing
-    dot1.classList.add('active');
-    label1.classList.add('active');
-    await sleep(500);
-
-    // Phase 2: Selecting
-    dot1.classList.remove('active');
-    dot1.classList.add('done');
-    label1.classList.remove('active');
-    label1.classList.add('done');
-    dot2.classList.add('active');
-    label2.classList.add('active');
-
-    // Light up selected model dots
-    await sleep(200);
-    for (const model of route.models) {
-      if (routeDots[model]) {
-        routeDots[model].classList.add('selected');
-      }
-      await sleep(150);
-    }
-    await sleep(150);
-
-    // Phase 3: Connecting
-    dot2.classList.remove('active');
-    dot2.classList.add('done');
-    label2.classList.remove('active');
-    label2.classList.add('done');
-    dot3.classList.add('active');
-    label3.classList.add('active');
-    await sleep(500);
-
-    dot3.classList.remove('active');
-    dot3.classList.add('done');
-    label3.classList.remove('active');
-    label3.classList.add('done');
-
-    await sleep(200);
-    routingViz.classList.remove('active');
-  }
-
-  // ---- Streaming simulation ----
-  async function streamText(element, text) {
-    const formatted = formatContent(text);
-    element.innerHTML = '';
-
-    // We'll do a simulated "streaming" effect by revealing chunks
-    const tempDiv = document.createElement('div');
-    tempDiv.innerHTML = formatted;
-    const fullHtml = tempDiv.innerHTML;
-
-    // Reveal progressively
-    const chunks = splitIntoChunks(text, 3);
-    let revealed = '';
-
-    for (let i = 0; i < chunks.length; i++) {
-      revealed += chunks[i];
-      element.innerHTML = formatContent(revealed);
-      scrollToBottom();
-      await sleep(15 + Math.random() * 25);
-    }
-
-    // Final render with full formatting
-    element.innerHTML = formatted;
-    scrollToBottom();
-  }
-
-  function splitIntoChunks(str, size) {
-    const chunks = [];
-    for (let i = 0; i < str.length; i += size) {
-      chunks.push(str.slice(i, i + size));
-    }
-    return chunks;
-  }
-
-  // ---- Core send logic ----
-  async function handleSend() {
-    const text = inputTextarea.value.trim();
-    if (!text || isProcessing) return;
-
-    isProcessing = true;
-    inputTextarea.value = '';
-    inputTextarea.style.height = 'auto';
-    updateSendButton();
-
-    // Create conversation if needed
-    if (!activeConvoId) {
-      const convo = createConversation();
-      activeConvoId = convo.id;
-    }
-
-    const convo = getActiveConversation();
-
-    // Update title from first message
-    if (convo.messages.length === 0) {
-      convo.title = text.length > 50 ? text.slice(0, 47) + '...' : text;
-    }
-
-    // Add user message
-    convo.messages.push({
-      role: 'user',
-      content: text,
-      timestamp: Date.now()
-    });
-    convo.updatedAt = Date.now();
-    saveConversations();
-
-    renderMessages();
-    renderSidebar();
-    updateHeader();
-
-    // Classify and route
-    const route = getRouteForPrompt(text);
-
-    // Play routing animation
-    await playRoutingAnimation(route);
-
-    if (route.models.length > 1) {
-      // Multi-model response
-      await handleMultiModelResponse(convo, route, text);
-    } else {
-      // Single model response
-      await handleSingleModelResponse(convo, route, text);
-    }
-
-    isProcessing = false;
-  }
-
-  async function handleSingleModelResponse(convo, route, text) {
-    const model = route.models[0];
-    const modelInfo = MODELS[model];
-    const response = getMockResponse(model, route.category);
-
-    // Add typing indicator
-    const typingHtml = `
-      <div class="msg ai" id="typingMsg">
-        <div class="msg-avatar ${modelInfo.color}-avatar">${modelInfo.icon}</div>
-        <div class="msg-content">
-          <div class="msg-model-label" style="color:var(--${modelInfo.color})">${modelInfo.name}</div>
-          <div class="typing-indicator">
-            <div class="typing-dot ${modelInfo.color}-dot"></div>
-            <div class="typing-dot ${modelInfo.color}-dot"></div>
-            <div class="typing-dot ${modelInfo.color}-dot"></div>
-          </div>
-        </div>
+      <h1>One prompt.<br><span>Best model. Instantly.</span></h1>
+      <p>Stop choosing between AI models. Nexus reads your intent and routes to the right one — Claude, ChatGPT, or Gemini — in milliseconds.</p>
+      <div class="w-chips">
+        <button class="w-chip" data-s="Write a Python function to find all prime numbers up to n">Write a prime sieve</button>
+        <button class="w-chip" data-s="Design a minimal logo for a space exploration startup">Design a logo</button>
+        <button class="w-chip" data-s="What is quantum computing and why does it matter?">Quantum computing</button>
+        <button class="w-chip" data-s="Compare answers: best framework for a new web app in 2026?">Ask all three</button>
       </div>
-    `;
-    messagesInner.insertAdjacentHTML('beforeend', typingHtml);
-    scrollToBottom();
+    </div>`;
+}
 
-    await sleep(600);
-
-    // Replace typing with streamed response
-    const typingMsg = document.getElementById('typingMsg');
-    const categoryLabel = CATEGORIES[route.category]?.label || '';
-
-    typingMsg.outerHTML = `
-      <div class="msg ai">
-        <div class="msg-avatar ${modelInfo.color}-avatar">${modelInfo.icon}</div>
-        <div class="msg-content">
-          <div class="msg-model-label" style="color:var(--${modelInfo.color})">
-            ${modelInfo.name}
-            ${categoryLabel ? `<span class="category-tag">${categoryLabel}</span>` : ''}
-          </div>
-          <div class="msg-bubble ai-bubble ${modelInfo.color}-bubble" id="streamTarget"></div>
-          <div class="msg-actions">
-            <button class="msg-action-btn" onclick="navigator.clipboard.writeText(decodeURIComponent('${encodeURIComponent(response)}'))">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-              Copy
-            </button>
-          </div>
-        </div>
-      </div>
-    `;
-
-    await streamText(document.getElementById('streamTarget'), response);
-
-    // Save message
-    convo.messages.push({
-      role: 'ai',
-      model: model,
-      content: response,
-      category: route.category,
-      timestamp: Date.now()
-    });
-    convo.updatedAt = Date.now();
-    saveConversations();
-    renderSidebar();
-    updateHeader();
+function renderSb(){
+  let h='<div class="sb-label">History</div>';
+  if(!convos.length) h+='<div class="sb-empty">No conversations yet</div>';
+  for(const c of convos){
+    const on=c.id===activeId;
+    const last=c.msgs.filter(m=>m.role==='ai').pop();
+    const col=last?`var(--${last.model||'accent'})`:'var(--t3)';
+    h+=`<div class="sb-item${on?' active':''}" data-id="${c.id}">
+      <div class="dot" style="background:${col}"></div>
+      <span class="title">${esc(c.title)}</span>
+      <button class="del" data-del="${c.id}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>`;
   }
-
-  async function handleMultiModelResponse(convo, route, text) {
-    const responses = [];
-    for (const model of route.models) {
-      responses.push({
-        model,
-        content: getMockResponse(model, route.category)
-      });
-    }
-
-    // Show typing for all models
-    const typingHtml = route.models.map(model => {
-      const info = MODELS[model];
-      return `
-        <div class="msg ai" style="margin-bottom:8px">
-          <div class="msg-avatar ${info.color}-avatar">${info.icon}</div>
-          <div class="msg-content">
-            <div class="msg-model-label" style="color:var(--${info.color})">${info.name}</div>
-            <div class="typing-indicator">
-              <div class="typing-dot ${info.color}-dot"></div>
-              <div class="typing-dot ${info.color}-dot"></div>
-              <div class="typing-dot ${info.color}-dot"></div>
-            </div>
-          </div>
-        </div>
-      `;
-    }).join('');
-
-    const wrapper = document.createElement('div');
-    wrapper.id = 'multiTyping';
-    wrapper.innerHTML = typingHtml;
-    messagesInner.appendChild(wrapper);
-    scrollToBottom();
-
-    await sleep(1000);
-
-    // Remove typing, add tabbed response
-    wrapper.remove();
-
-    // Save the multi-model message
-    const multiMsg = {
-      role: 'ai',
-      multiModel: true,
-      responses,
-      recommended: route.recommended,
-      category: route.category,
-      timestamp: Date.now()
-    };
-
-    convo.messages.push(multiMsg);
-    convo.updatedAt = Date.now();
-    saveConversations();
-
-    // Re-render to show tabs
-    renderMessages();
-    renderSidebar();
-    updateHeader();
-  }
-
-  // ---- UI helpers ----
-  function sleep(ms) {
-    return new Promise(resolve => setTimeout(resolve, ms));
-  }
-
-  function updateSendButton() {
-    btnSend.classList.toggle('active', inputTextarea.value.trim().length > 0);
-  }
-
-  function closeSidebar() {
-    sidebar.classList.remove('open');
-    overlay.classList.remove('active');
-  }
-
-  function openSidebar() {
-    sidebar.classList.add('open');
-    overlay.classList.add('active');
-  }
-
-  // ---- Auto-growing textarea ----
-  function autoGrow() {
-    inputTextarea.style.height = 'auto';
-    inputTextarea.style.height = Math.min(inputTextarea.scrollHeight, 200) + 'px';
-  }
-
-  // ---- Event bindings ----
-  inputTextarea.addEventListener('input', () => {
-    autoGrow();
-    updateSendButton();
+  sbList.innerHTML=h;
+  sbList.querySelectorAll('.sb-item').forEach(el=>{
+    el.onclick=e=>{if(e.target.closest('.del'))return;switchTo(el.dataset.id);closeSb()};
   });
-
-  inputTextarea.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSend();
-    }
+  sbList.querySelectorAll('.del').forEach(b=>{
+    b.onclick=e=>{e.stopPropagation();delConvo(b.dataset.del)};
   });
+}
 
-  btnSend.addEventListener('click', handleSend);
+function updateH(){
+  const c=active();
+  hTitle.textContent=c?c.title:'New chat';
+  if(c&&c.msgs.length){
+    const used=new Set();
+    c.msgs.forEach(m=>{if(m.model)used.add(m.model);if(m.responses)m.responses.forEach(r=>used.add(r.model))});
+    hBadges.innerHTML=[...used].map(m=>`<span class="h-badge ${m}">${M[m]?.name||m}</span>`).join('');
+  }else{hBadges.innerHTML='';}
+}
 
-  btnNewChat.addEventListener('click', () => {
-    activeConvoId = null;
-    renderMessages();
-    renderSidebar();
-    updateHeader();
-    closeSidebar();
-    inputTextarea.focus();
-  });
+function scrollEnd(){requestAnimationFrame(()=>{messagesEl.scrollTop=messagesEl.scrollHeight})}
 
-  hamburger.addEventListener('click', openSidebar);
-  overlay.addEventListener('click', closeSidebar);
+// ---- ROUTING ANIMATION (minimal) ----
+async function showRouting(rt){
+  const div=document.createElement('div');
+  div.className='routing';
+  div.innerHTML=`<div class="r-inner"><div class="r-card">
+    <div class="r-spinner"></div>
+    <span class="r-text">Routing...</span>
+    <div class="r-dots">
+      <div class="r-dot claude" data-m="claude">C</div>
+      <div class="r-dot chatgpt" data-m="chatgpt">G</div>
+      <div class="r-dot gemini" data-m="gemini">Gm</div>
+    </div>
+  </div></div>`;
+  mInner.appendChild(div);
+  scrollEnd();
 
-  searchInput.addEventListener('input', renderSidebar);
+  const label=div.querySelector('.r-text');
+  label.textContent='Analyzing intent...';
+  await sleep(400);
 
-  // Mode selector
-  document.querySelectorAll('.mode-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      routingMode = btn.dataset.mode;
-      headerMode.textContent = routingMode.toUpperCase();
-    });
-  });
+  label.textContent='Selecting model...';
+  for(const m of rt.models){
+    const d=div.querySelector(`[data-m="${m}"]`);
+    if(d)d.classList.add('lit');
+    await sleep(180);
+  }
+  await sleep(300);
 
-  headerMode.addEventListener('click', () => {
-    const modes = ['auto', 'multi', 'claude', 'chatgpt', 'gemini'];
-    const currentIdx = modes.indexOf(routingMode);
-    const nextMode = modes[(currentIdx + 1) % modes.length];
+  label.textContent=`Connecting to ${rt.models.map(m=>M[m].name).join(' + ')}`;
+  await sleep(350);
 
-    routingMode = nextMode;
-    headerMode.textContent = routingMode.toUpperCase();
+  div.remove();
+}
 
-    document.querySelectorAll('.mode-btn').forEach(b => {
-      b.classList.toggle('active', b.dataset.mode === routingMode);
-    });
-  });
+// ---- STREAMING ----
+async function stream(el,text){
+  el.innerHTML='';
+  let rev='';
+  const chunks=[];
+  for(let i=0;i<text.length;i+=4)chunks.push(text.slice(i,i+4));
+  for(const ch of chunks){
+    rev+=ch;
+    el.innerHTML=fmt(rev);
+    scrollEnd();
+    await sleep(12+Math.random()*18);
+  }
+  el.innerHTML=fmt(text);
+  scrollEnd();
+}
 
-  // Suggestion chips (delegated)
-  document.addEventListener('click', (e) => {
-    const chip = e.target.closest('.suggestion-chip');
-    if (chip) {
-      inputTextarea.value = chip.dataset.suggestion;
-      autoGrow();
-      updateSendButton();
-      handleSend();
-    }
-  });
+// ---- SEND ----
+async function send(){
+  const text=input.value.trim();
+  if(!text||busy)return;
+  busy=true;
+  input.value='';input.style.height='auto';
+  btnSend.classList.remove('on');
 
-  // ---- Initialize ----
-  renderWelcome();
-  renderSidebar();
-  updateHeader();
-  inputTextarea.focus();
+  if(!activeId){const c=newConvo();activeId=c.id}
+  const c=active();
+  if(!c.msgs.length)c.title=text.length>45?text.slice(0,42)+'...':text;
 
+  c.msgs.push({role:'user',content:text,ts:Date.now()});
+  c.ts=Date.now();save();
+  render();renderSb();updateH();
+
+  const rt=route(text);
+  await showRouting(rt);
+
+  if(rt.models.length>1){
+    await doMulti(c,rt);
+  }else{
+    await doSingle(c,rt);
+  }
+  busy=false;
+}
+
+async function doSingle(c,rt){
+  const model=rt.models[0],md=M[model];
+  const resp=mockResponse(model,rt.cat);
+
+  // typing
+  const t=document.createElement('div');
+  t.className='msg ai';t.id='_typing';
+  t.innerHTML=`<div class="ai-ava ${md.cls}">${md.abbr}</div><div class="ai-body"><div class="ai-head"><span class="ai-name ${md.cls}">${md.name}</span></div><div class="typing"><div class="d ${md.cls}"></div><div class="d ${md.cls}"></div><div class="d ${md.cls}"></div></div></div>`;
+  mInner.appendChild(t);scrollEnd();
+  await sleep(500);
+
+  // replace with streamed
+  const cat=CAT[rt.cat]?.label||'';
+  t.innerHTML=`<div class="ai-ava ${md.cls}">${md.abbr}</div>
+    <div class="ai-body">
+      <div class="ai-head"><span class="ai-name ${md.cls}">${md.name}</span>${cat?`<span class="ai-cat">${cat}</span>`:''}</div>
+      <div class="ai-text" id="_stream"></div>
+      <div class="ai-actions"><button class="ai-act" onclick="navigator.clipboard.writeText(decodeURIComponent('${encodeURIComponent(resp)}'))"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>Copy</button></div>
+    </div>`;
+  t.removeAttribute('id');
+
+  await stream($('#_stream'),resp);
+
+  c.msgs.push({role:'ai',model,content:resp,cat:rt.cat,ts:Date.now()});
+  c.ts=Date.now();save();renderSb();updateH();
+}
+
+async function doMulti(c,rt){
+  const resps=rt.models.map(m=>({model:m,content:mockResponse(m,rt.cat)}));
+
+  // typing
+  const w=document.createElement('div');w.id='_mtyping';
+  w.innerHTML=rt.models.map(m=>{const md=M[m];return`<div class="msg ai" style="margin-bottom:8px"><div class="ai-ava ${md.cls}">${md.abbr}</div><div class="ai-body"><div class="ai-head"><span class="ai-name ${md.cls}">${md.name}</span></div><div class="typing"><div class="d ${md.cls}"></div><div class="d ${md.cls}"></div><div class="d ${md.cls}"></div></div></div></div>`;}).join('');
+  mInner.appendChild(w);scrollEnd();
+  await sleep(800);
+  w.remove();
+
+  c.msgs.push({role:'ai',multi:true,responses:resps,rec:rt.rec,cat:rt.cat,ts:Date.now()});
+  c.ts=Date.now();save();
+  render();renderSb();updateH();
+}
+
+// ---- UI ----
+function closeSb(){sidebar.classList.remove('open');overlay.classList.remove('on')}
+function openSb(){sidebar.classList.add('open');overlay.classList.add('on')}
+
+input.addEventListener('input',()=>{
+  input.style.height='auto';
+  input.style.height=Math.min(input.scrollHeight,180)+'px';
+  btnSend.classList.toggle('on',input.value.trim().length>0);
+});
+input.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send()}});
+btnSend.addEventListener('click',send);
+$('#btnNew').addEventListener('click',()=>{activeId=null;render();renderSb();updateH();closeSb();input.focus()});
+$('#hamburger').addEventListener('click',openSb);
+overlay.addEventListener('click',closeSb);
+
+document.addEventListener('click',e=>{
+  const ch=e.target.closest('.w-chip');
+  if(ch){input.value=ch.dataset.s;input.dispatchEvent(new Event('input'));send()}
+});
+
+// ---- INIT ----
+renderWelcome();renderSb();updateH();input.focus();
 })();
 </script>
 </body>
